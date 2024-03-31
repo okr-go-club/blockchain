@@ -12,6 +12,9 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 type Transaction struct {
@@ -117,6 +120,22 @@ func (t *Transaction) verifySignature() (bool, error) {
 	return true, nil
 }
 
+func createTransaction(privateKey, fromAddress, toAddress string, amount, fee float64) (Transaction, error) {
+	t := Transaction{
+		FromAddress:   fromAddress,
+		ToAddress:     toAddress,
+		Amount:        amount,
+		Timestamp:     int(time.Now().Unix()),
+		TransactionId: uuid.New().String(),
+		Fee:           fee,
+	}
+	err := t.Sign(privateKey)
+	if err != nil {
+		return Transaction{}, err
+	}
+	return t, nil
+}
+
 func main() {
 	privateKeyPEMStr, publicKeyPEMStr, err := GenerateRSAKeys(4096)
 	if err != nil {
@@ -124,25 +143,15 @@ func main() {
 		return
 	}
 
-	t := Transaction{
-		FromAddress:   publicKeyPEMStr,
-		ToAddress:     "0x456",
-		Amount:        10.0,
-		Timestamp:     1234567890,
-		TransactionId: "abc123",
-		Fee:           0.1,
+	t, err := createTransaction(privateKeyPEMStr, publicKeyPEMStr, "0x123", 5.0, 0.1)
+	if err != nil {
+		fmt.Println("Error creating transaction:", err)
+		return
 	}
 
 	fmt.Println("Transaction: ", t)
-
 	hash := t.calculateHash()
 	fmt.Println("Hash: ", hash)
-
-	err = t.Sign(privateKeyPEMStr)
-	if err != nil {
-		fmt.Println("Error signing transaction:", err)
-		return
-	}
 	fmt.Println("Signature is valid: ", t.IsValid())
 }
 
