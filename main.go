@@ -20,8 +20,8 @@ Properties: FromAddress, ToAddress, Amount, Timestamp, TransactionId, Signature,
 
 Behavior:
 	+ Calculates its own hash based on transaction content.
-	- Signs itself with the sender's private key.
-	- Validates itself (signature and data integrity).
+	+ Signs itself with the sender's private key.
+	+ Validates itself (signature and data integrity).
 */
 
 type Transaction struct {
@@ -40,7 +40,6 @@ func (t *Transaction) CalculateHash() string {
 		fmt.Sprintf("%.2f", t.Amount) +
 		strconv.Itoa(t.Timestamp) +
 		t.TransactionId +
-		t.Signature +
 		fmt.Sprintf("%.2f", t.Fee)
 	h := sha256.New()
 	h.Write([]byte(record))
@@ -50,26 +49,29 @@ func (t *Transaction) CalculateHash() string {
 
 func (t *Transaction) IsValid() bool {
 	if t.FromAddress == "" { return true }  // Transaction from the system
-	if t.Signature == "" { return false }  // Transaction must be signed
+	if t.Signature == "" {
+		fmt.Println("Transaction is not signed")
+		return false
+	}
 
-	isValid, err := t.VerifySignature()
+	isValid, err := t.verifySignature()
 	if err != nil {
 		fmt.Println("Error verifying signature:", err)
 		return false
 	}
+
 	return isValid
 }
 
-
-func (t *Transaction) SignData(privateKeyPEMStr string) (signatureStr string, err error) {
+func (t *Transaction) Sign(privateKeyPEMStr string) error {
     block, _ := pem.Decode([]byte(privateKeyPEMStr))
     if block == nil {
-        return "", errors.New("failed to parse PEM block containing the key")
+        return errors.New("failed to parse PEM block containing the key")
     }
 
     privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
     if err != nil {
-        return "", err
+        return err
     }
 
     hasher := sha256.New()
@@ -78,14 +80,14 @@ func (t *Transaction) SignData(privateKeyPEMStr string) (signatureStr string, er
 
     signature, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, hash)
     if err != nil {
-        return "", err
+        return err
     }
 
-    signatureStr = base64.StdEncoding.EncodeToString(signature)
-    return signatureStr, nil
+    t.Signature = base64.StdEncoding.EncodeToString(signature)
+    return nil
 }
 
-func (t *Transaction) VerifySignature() (bool, error) {
+func (t *Transaction) verifySignature() (bool, error) {
     block, _ := pem.Decode([]byte(t.FromAddress))
     if block == nil {
         return false, errors.New("failed to parse PEM block containing the key")
@@ -124,33 +126,21 @@ func main() {
 		fmt.Println("Error generating RSA keys:", err)
 		return
 	}
-
 	t := Transaction{
 		FromAddress: publicKeyPEMStr,
 		ToAddress: "0x456",
 		Amount: 10.0,
 		Timestamp: 1234567890,
 		TransactionId: "abc123",
-		Signature: "xyz456",
 		Fee: 0.1,
 	}
-    fmt.Println(t)
+    fmt.Println("Transaction: ", t)
 	hash := t.CalculateHash()
     fmt.Println("Hash: ", hash)
 
-	fmt.Println("Before Signing ---")
-	fmt.Println("Signature:", t.Signature)
-	fmt.Println("Signature is valid:", t.IsValid())
-	
-	signature, err := t.SignData(privateKeyPEMStr)
-	if err != nil {
-		fmt.Println("Error signing data:", err)
-		return
-	}
-	t.Signature = signature
-	fmt.Println("After Signing ---")
-	fmt.Println("Signature:", t.Signature)
-	fmt.Println("Signature is valid:", t.IsValid())
+	t.Sign(privateKeyPEMStr)
+	isValid := t.IsValid()
+	fmt.Println("Signature is valid: ", isValid)
 }
 
 // Utility functions
