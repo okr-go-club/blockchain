@@ -69,7 +69,12 @@ func (t *Transaction) Sign(privateKeyPEMStr string) error {
 		return err
 	}
 
-	signature, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, []byte(t.calculateHash()))
+	hash, err := hex.DecodeString(t.calculateHash())
+	if err != nil {
+		return err
+	}
+
+	signature, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, hash)
 	if err != nil {
 		return err
 	}
@@ -99,7 +104,12 @@ func (t *Transaction) verifySignature() (bool, error) {
 		return false, err
 	}
 
-	err = rsa.VerifyPKCS1v15(publicKey, crypto.SHA256, []byte(t.calculateHash()), signature)
+	hash, err := hex.DecodeString(t.calculateHash())
+	if err != nil {
+		return false, err
+	}
+
+	err = rsa.VerifyPKCS1v15(publicKey, crypto.SHA256, hash, signature)
 	if err != nil {
 		return false, err
 	}
@@ -128,7 +138,11 @@ func main() {
 	hash := t.calculateHash()
 	fmt.Println("Hash: ", hash)
 
-	t.Sign(privateKeyPEMStr)
+	err = t.Sign(privateKeyPEMStr)
+	if err != nil {
+		fmt.Println("Error signing transaction:", err)
+		return
+	}
 	fmt.Println("Signature is valid: ", t.IsValid())
 }
 
