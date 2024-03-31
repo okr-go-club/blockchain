@@ -25,14 +25,15 @@ type Transaction struct {
 }
 
 func (t *Transaction) calculateHash() string {
-	record := t.FromAddress +
+	data := t.FromAddress +
 		t.ToAddress +
 		fmt.Sprintf("%.2f", t.Amount) +
 		strconv.Itoa(t.Timestamp) +
 		t.TransactionId +
 		fmt.Sprintf("%.2f", t.Fee)
+
 	h := sha256.New()
-	h.Write([]byte(record))
+	h.Write([]byte(data))
 	hashed := h.Sum(nil)
 	return hex.EncodeToString(hashed)
 }
@@ -58,21 +59,17 @@ func (t *Transaction) IsValid() bool {
 }
 
 func (t *Transaction) Sign(privateKeyPEMStr string) error {
-	block, _ := pem.Decode([]byte(privateKeyPEMStr))
-	if block == nil {
+	pem, _ := pem.Decode([]byte(privateKeyPEMStr))
+	if pem == nil {
 		return errors.New("failed to parse PEM block containing the key")
 	}
 
-	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	privateKey, err := x509.ParsePKCS1PrivateKey(pem.Bytes)
 	if err != nil {
 		return err
 	}
 
-	hasher := sha256.New()
-	hasher.Write([]byte(t.calculateHash()))
-	hash := hasher.Sum(nil)
-
-	signature, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, hash)
+	signature, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, []byte(t.calculateHash()))
 	if err != nil {
 		return err
 	}
@@ -82,12 +79,12 @@ func (t *Transaction) Sign(privateKeyPEMStr string) error {
 }
 
 func (t *Transaction) verifySignature() (bool, error) {
-	block, _ := pem.Decode([]byte(t.FromAddress))
-	if block == nil {
+	pem, _ := pem.Decode([]byte(t.FromAddress))
+	if pem == nil {
 		return false, errors.New("failed to parse PEM block containing the key")
 	}
 
-	publicKeyInterface, err := x509.ParsePKIXPublicKey(block.Bytes)
+	publicKeyInterface, err := x509.ParsePKIXPublicKey(pem.Bytes)
 	if err != nil {
 		return false, err
 	}
@@ -102,11 +99,7 @@ func (t *Transaction) verifySignature() (bool, error) {
 		return false, err
 	}
 
-	hasher := sha256.New()
-	hasher.Write([]byte(t.calculateHash()))
-	hash := hasher.Sum(nil)
-
-	err = rsa.VerifyPKCS1v15(publicKey, crypto.SHA256, hash, signature)
+	err = rsa.VerifyPKCS1v15(publicKey, crypto.SHA256, []byte(t.calculateHash()), signature)
 	if err != nil {
 		return false, err
 	}
@@ -120,6 +113,7 @@ func main() {
 		fmt.Println("Error generating RSA keys:", err)
 		return
 	}
+
 	t := Transaction{
 		FromAddress:   publicKeyPEMStr,
 		ToAddress:     "0x456",
@@ -128,13 +122,14 @@ func main() {
 		TransactionId: "abc123",
 		Fee:           0.1,
 	}
+
 	fmt.Println("Transaction: ", t)
+
 	hash := t.calculateHash()
 	fmt.Println("Hash: ", hash)
 
 	t.Sign(privateKeyPEMStr)
-	isValid := t.IsValid()
-	fmt.Println("Signature is valid: ", isValid)
+	fmt.Println("Signature is valid: ", t.IsValid())
 }
 
 // Utility functions
