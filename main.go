@@ -14,27 +14,17 @@ import (
 	"strconv"
 )
 
-/*
-Transaction
-Properties: FromAddress, ToAddress, Amount, Timestamp, TransactionId, Signature, Fee
-
-Behavior:
-	+ Calculates its own hash based on transaction content.
-	+ Signs itself with the sender's private key.
-	+ Validates itself (signature and data integrity).
-*/
-
 type Transaction struct {
-	FromAddress string
-	ToAddress string
-	Amount float64
-	Timestamp int
+	FromAddress   string
+	ToAddress     string
+	Amount        float64
+	Timestamp     int
 	TransactionId string
-	Signature string
-	Fee float64
+	Signature     string
+	Fee           float64
 }
 
-func (t *Transaction) CalculateHash() string {
+func (t *Transaction) calculateHash() string {
 	record := t.FromAddress +
 		t.ToAddress +
 		fmt.Sprintf("%.2f", t.Amount) +
@@ -48,7 +38,11 @@ func (t *Transaction) CalculateHash() string {
 }
 
 func (t *Transaction) IsValid() bool {
-	if t.FromAddress == "" { return true }  // Transaction from the system
+	// Check if the transaction is from the system
+	if t.FromAddress == "" {
+		return true
+	}
+
 	if t.Signature == "" {
 		fmt.Println("Transaction is not signed")
 		return false
@@ -64,60 +58,60 @@ func (t *Transaction) IsValid() bool {
 }
 
 func (t *Transaction) Sign(privateKeyPEMStr string) error {
-    block, _ := pem.Decode([]byte(privateKeyPEMStr))
-    if block == nil {
-        return errors.New("failed to parse PEM block containing the key")
-    }
+	block, _ := pem.Decode([]byte(privateKeyPEMStr))
+	if block == nil {
+		return errors.New("failed to parse PEM block containing the key")
+	}
 
-    privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
-    if err != nil {
-        return err
-    }
+	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	if err != nil {
+		return err
+	}
 
-    hasher := sha256.New()
-    hasher.Write([]byte(t.CalculateHash()))
-    hash := hasher.Sum(nil)
+	hasher := sha256.New()
+	hasher.Write([]byte(t.calculateHash()))
+	hash := hasher.Sum(nil)
 
-    signature, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, hash)
-    if err != nil {
-        return err
-    }
+	signature, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, hash)
+	if err != nil {
+		return err
+	}
 
-    t.Signature = base64.StdEncoding.EncodeToString(signature)
-    return nil
+	t.Signature = base64.StdEncoding.EncodeToString(signature)
+	return nil
 }
 
 func (t *Transaction) verifySignature() (bool, error) {
-    block, _ := pem.Decode([]byte(t.FromAddress))
-    if block == nil {
-        return false, errors.New("failed to parse PEM block containing the key")
-    }
+	block, _ := pem.Decode([]byte(t.FromAddress))
+	if block == nil {
+		return false, errors.New("failed to parse PEM block containing the key")
+	}
 
-    publicKeyInterface, err := x509.ParsePKIXPublicKey(block.Bytes)
-    if err != nil {
-        return false, err
-    }
+	publicKeyInterface, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		return false, err
+	}
 
-    publicKey, ok := publicKeyInterface.(*rsa.PublicKey)
-    if !ok {
-        return false, errors.New("not RSA public key")
-    }
+	publicKey, ok := publicKeyInterface.(*rsa.PublicKey)
+	if !ok {
+		return false, errors.New("not RSA public key")
+	}
 
-    signature, err := base64.StdEncoding.DecodeString(t.Signature)
-    if err != nil {
-        return false, err
-    }
+	signature, err := base64.StdEncoding.DecodeString(t.Signature)
+	if err != nil {
+		return false, err
+	}
 
-    hasher := sha256.New()
-    hasher.Write([]byte(t.CalculateHash()))
-    hash := hasher.Sum(nil)
+	hasher := sha256.New()
+	hasher.Write([]byte(t.calculateHash()))
+	hash := hasher.Sum(nil)
 
-    err = rsa.VerifyPKCS1v15(publicKey, crypto.SHA256, hash, signature)
-    if err != nil {
-        return false, err
-    }
+	err = rsa.VerifyPKCS1v15(publicKey, crypto.SHA256, hash, signature)
+	if err != nil {
+		return false, err
+	}
 
-    return true, nil
+	return true, nil
 }
 
 func main() {
@@ -127,16 +121,16 @@ func main() {
 		return
 	}
 	t := Transaction{
-		FromAddress: publicKeyPEMStr,
-		ToAddress: "0x456",
-		Amount: 10.0,
-		Timestamp: 1234567890,
+		FromAddress:   publicKeyPEMStr,
+		ToAddress:     "0x456",
+		Amount:        10.0,
+		Timestamp:     1234567890,
 		TransactionId: "abc123",
-		Fee: 0.1,
+		Fee:           0.1,
 	}
-    fmt.Println("Transaction: ", t)
-	hash := t.CalculateHash()
-    fmt.Println("Hash: ", hash)
+	fmt.Println("Transaction: ", t)
+	hash := t.calculateHash()
+	fmt.Println("Hash: ", hash)
 
 	t.Sign(privateKeyPEMStr)
 	isValid := t.IsValid()
@@ -145,37 +139,37 @@ func main() {
 
 // Utility functions
 func GenerateRSAKeys(bits int) (privateKeyPEMStr, publicKeyPEMStr string, err error) {
-    privatekey, err := rsa.GenerateKey(rand.Reader, bits)
-    if err != nil {
-        return "", "", err
-    }
+	privatekey, err := rsa.GenerateKey(rand.Reader, bits)
+	if err != nil {
+		return "", "", err
+	}
 
-    // convert to DER format for PEM encoding
-    privateDER := x509.MarshalPKCS1PrivateKey(privatekey)
+	// convert to DER format for PEM encoding
+	privateDER := x509.MarshalPKCS1PrivateKey(privatekey)
 
-    // Create a PEM block for the private key
-    privateKeyBlock := &pem.Block{
-        Type:  "RSA Private Key",
-        Bytes: privateDER,
-    }
+	// Create a PEM block for the private key
+	privateKeyBlock := &pem.Block{
+		Type:  "RSA Private Key",
+		Bytes: privateDER,
+	}
 
-    // Encode the private key to PEM format and convert to string
-    privateKeyPEMStr = string(pem.EncodeToMemory(privateKeyBlock))
+	// Encode the private key to PEM format and convert to string
+	privateKeyPEMStr = string(pem.EncodeToMemory(privateKeyBlock))
 
-    // Extract the public key from the private key, marshal to DER format
-    publicDER, err := x509.MarshalPKIXPublicKey(&privatekey.PublicKey)
-    if err != nil {
-        return "", "", err
-    }
+	// Extract the public key from the private key, marshal to DER format
+	publicDER, err := x509.MarshalPKIXPublicKey(&privatekey.PublicKey)
+	if err != nil {
+		return "", "", err
+	}
 
-    // Create a PEM block for the public key
-    publicKeyBlock := &pem.Block{
-        Type:  "RSA PUBLIC KEY",
-        Bytes: publicDER,
-    }
+	// Create a PEM block for the public key
+	publicKeyBlock := &pem.Block{
+		Type:  "RSA PUBLIC KEY",
+		Bytes: publicDER,
+	}
 
-    // Encode the public key to PEM format and convert to string
-    publicKeyPEMStr = string(pem.EncodeToMemory(publicKeyBlock))
+	// Encode the public key to PEM format and convert to string
+	publicKeyPEMStr = string(pem.EncodeToMemory(publicKeyBlock))
 
-    return privateKeyPEMStr, publicKeyPEMStr, nil
+	return privateKeyPEMStr, publicKeyPEMStr, nil
 }
