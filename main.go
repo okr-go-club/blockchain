@@ -136,6 +136,29 @@ func createTransaction(privateKey, fromAddress, toAddress string, amount, fee fl
 	return t, nil
 }
 
+type Blockchain struct {
+	transactions []Transaction
+}
+
+func (b *Blockchain) addTransaction(t Transaction) {
+	b.transactions = append(b.transactions, t)
+}
+
+func (b *Blockchain) getBalance(address string) float64 {
+	var balance float64 = 0
+	for _, t := range b.transactions {
+		switch address {
+		case t.ToAddress:
+			balance += t.Amount
+		case t.FromAddress:
+			balance -= t.Amount
+		default:
+			balance += 0
+		}
+	}
+	return balance
+}
+
 func main() {
 	privateKeyPEMStr, publicKeyPEMStr, err := GenerateRSAKeys(4096)
 	if err != nil {
@@ -153,6 +176,10 @@ func main() {
 	hash := t.calculateHash()
 	fmt.Println("Hash: ", hash)
 	fmt.Println("Signature is valid: ", t.IsValid())
+	b := Blockchain{}
+	b.addTransaction(t)
+	fmt.Println(b)
+	fmt.Println(b.getBalance("0x123"))
 }
 
 // Utility functions
