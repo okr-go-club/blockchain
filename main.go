@@ -168,7 +168,7 @@ func createTransaction(privateKey, fromAddress, toAddress string, amount, fee fl
 
 func main() {
 	w := new(Wallet)
-    w.keyGen()
+	w.keyGen()
 
 	privateKeyPEMStr, err := privateKeyToPEMString(w.privateKey)
 	if err != nil {
@@ -182,8 +182,8 @@ func main() {
 		return
 	}
 
-    fmt.Println("PrivateKey is:", w.privateKey) 
-    fmt.Println("PublicKey is:", w.publicKey) 
+	fmt.Println("PrivateKey is:", w.privateKey)
+	fmt.Println("PublicKey is:", w.publicKey)
 
 	t, err := createTransaction(privateKeyPEMStr, publicKeyPEMStr, "0x123", 5.0, 0.1)
 	if err != nil {
@@ -199,42 +199,42 @@ func main() {
 
 // Utility functions
 type Wallet struct {
-	privateKey	*ecdsa.PrivateKey
-	publicKey	*ecdsa.PublicKey
+	privateKey *ecdsa.PrivateKey
+	publicKey  *ecdsa.PublicKey
 }
 
-func (w *Wallet) keyGen()  {
-	privateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader) 
-    w.privateKey = privateKey
-    w.publicKey = &w.privateKey.PublicKey
+func (w *Wallet) keyGen() {
+	privateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	w.privateKey = privateKey
+	w.publicKey = &w.privateKey.PublicKey
 }
 
 func privateKeyToPEMString(privKey *ecdsa.PrivateKey) (string, error) {
-    der, err := x509.MarshalECPrivateKey(privKey)
-    if err != nil {
-        return "", err
-    }
+	der, err := x509.MarshalECPrivateKey(privKey)
+	if err != nil {
+		return "", err
+	}
 
-    pemBlock := &pem.Block{
-        Type:  "EC PRIVATE KEY",
-        Bytes: der,
-    }
-    pemData := pem.EncodeToMemory(pemBlock)
+	pemBlock := &pem.Block{
+		Type:  "EC PRIVATE KEY",
+		Bytes: der,
+	}
+	pemData := pem.EncodeToMemory(pemBlock)
 
-    return string(pemData), nil
+	return string(pemData), nil
 }
 
 func publicKeyToPEMString(pubKey *ecdsa.PublicKey) (string, error) {
-    der, err := x509.MarshalPKIXPublicKey(pubKey)
-    if err != nil {
-        return "", err
-    }
+	der, err := x509.MarshalPKIXPublicKey(pubKey)
+	if err != nil {
+		return "", err
+	}
 
-    pemBlock := &pem.Block{
-        Type:  "PUBLIC KEY",
-        Bytes: der,
-    }
-    pemData := pem.EncodeToMemory(pemBlock)
+	pemBlock := &pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: der,
+	}
+	pemData := pem.EncodeToMemory(pemBlock)
 
-    return string(pemData), nil
+	return string(pemData), nil
 }
