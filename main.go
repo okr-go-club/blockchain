@@ -1,7 +1,6 @@
 package main
 
 import (
-	"strings"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -13,10 +12,11 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"math/big"
 	"strconv"
+	"strings"
 	"time"
-	"github.com/google/uuid"
 )
 
 type Block struct {
@@ -63,6 +63,11 @@ func (b *Block) MineBlock(difficulty int) {
 			b.Nonce++
 		}
 	}
+}
+
+func ValidateBlockHash(b *Block) bool {
+	calculatedHash, _ := b.CalculateHash()
+	return b.Hash == calculatedHash
 }
 
 type Transaction struct {
