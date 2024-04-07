@@ -39,10 +39,8 @@ func (t *Transaction) GetDataString() string {
 }
 
 func (t *Transaction) calculateHash() string {
-	h := sha256.New()
-	h.Write([]byte(t.GetDataString()))
-	hashed := h.Sum(nil)
-	return hex.EncodeToString(hashed)
+	hash := sha256.Sum256([]byte(t.GetDataString()))
+	return hex.EncodeToString(hash[:])
 }
 
 func (t *Transaction) IsValid() bool {
@@ -81,14 +79,8 @@ func (t *Transaction) Sign(privateKeyPEMStr string) error {
 		return err
 	}
 
-	hasher := sha256.New()
-	_, err = hasher.Write(hash)
-	if err != nil {
-		return err
-	}
-	hashed := hasher.Sum(nil)
-
-	r, s, err := ecdsa.Sign(rand.Reader, privateKey, hashed)
+	hashed := sha256.Sum256(hash)
+	r, s, err := ecdsa.Sign(rand.Reader, privateKey, hashed[:])
 	if err != nil {
 		return err
 	}
@@ -137,14 +129,8 @@ func (t *Transaction) verifySignature() (bool, error) {
 		return false, err
 	}
 
-	hasher := sha256.New()
-	_, err = hasher.Write(hash)
-	if err != nil {
-		return false, err
-	}
-	hashed := hasher.Sum(nil)
-
-	valid := ecdsa.Verify(publicKey, hashed, sigStruct.R, sigStruct.S)
+	hashed := sha256.Sum256(hash)
+	valid := ecdsa.Verify(publicKey, hashed[:], sigStruct.R, sigStruct.S)
 	if !valid {
 		return false, errors.New("signature verification failed")
 	}
