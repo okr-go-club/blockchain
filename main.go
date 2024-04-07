@@ -29,16 +29,18 @@ type Transaction struct {
 	Fee           float64
 }
 
-func (t *Transaction) calculateHash() string {
-	data := t.FromAddress +
+func (t *Transaction) GetDataString() string {
+	return t.FromAddress +
 		t.ToAddress +
 		fmt.Sprintf("%.2f", t.Amount) +
 		strconv.Itoa(t.Timestamp) +
 		t.TransactionId +
 		fmt.Sprintf("%.2f", t.Fee)
+}
 
+func (t *Transaction) calculateHash() string {
 	h := sha256.New()
-	h.Write([]byte(data))
+	h.Write([]byte(t.GetDataString()))
 	hashed := h.Sum(nil)
 	return hex.EncodeToString(hashed)
 }
