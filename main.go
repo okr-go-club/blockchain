@@ -32,7 +32,7 @@ func (b *Block) CalculateHash() (string, error) {
 	// Объединяем содержимое блока, включая транзакции
 	blockContent := ""
 	for _, tx := range b.Transactions {
-		blockContent += tx.Data
+		blockContent += tx.GetDataString()
 	}
 
 	// Создаем byte array с blockContent
