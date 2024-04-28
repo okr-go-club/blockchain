@@ -65,19 +65,20 @@ func (b *Block) MineBlock(difficulty int) {
 	}
 }
 
-func (b *Block) ValidateBlockHash() bool {
+func (b *Block) ValidateBlock() bool {
 	calculatedHash, err := b.CalculateHash()
 	if err != nil {
 		return false
 	}
 
-	transactionsValid := true
-	for _, tx := range b.Transactions {
-		transactionsValid = transactionsValid && tx.IsValid()
+	if len(b.Transactions) > b.Capacity-1 {
+		return false
 	}
 
-	if !transactionsValid {
-		return false
+	for _, tx := range b.Transactions {
+		if !tx.IsValid() {
+			return false
+		}
 	}
 
 	return b.Hash == calculatedHash
