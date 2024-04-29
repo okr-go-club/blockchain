@@ -223,22 +223,10 @@ func main() {
 	w := new(Wallet)
 	w.keyGen()
 
-	privateKeyPEMStr, err := privateKeyToPEMString(w.privateKey)
-	if err != nil {
-		fmt.Println("Error converting private key to PEM:", err)
-		return
-	}
-
-	publicKeyPEMStr, err := publicKeyToPEMString(w.publicKey)
-	if err != nil {
-		fmt.Println("Error converting private key to PEM:", err)
-		return
-	}
-
 	fmt.Println("PrivateKey is:", w.privateKey)
 	fmt.Println("PublicKey is:", w.publicKey)
 
-	t, err := createTransaction(privateKeyPEMStr, publicKeyPEMStr, "0x123", 5.0, 0.1)
+	t, err := createTransaction(w.privateKey, w.publicKey, "0x123", 5.0, 0.1)
 	if err != nil {
 		fmt.Println("Error creating transaction:", err)
 		return
@@ -252,14 +240,30 @@ func main() {
 
 // Utility functions
 type Wallet struct {
-	privateKey *ecdsa.PrivateKey
-	publicKey  *ecdsa.PublicKey
+	rawPrivateKey *ecdsa.PrivateKey
+	rawPublicKey  *ecdsa.PublicKey
+	privateKey    string
+	publicKey     string
 }
 
 func (w *Wallet) keyGen() {
 	privateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	w.privateKey = privateKey
-	w.publicKey = &w.privateKey.PublicKey
+	w.rawPrivateKey = privateKey
+	w.rawPublicKey = &w.rawPrivateKey.PublicKey
+
+	privateKeyPEMStr, err := privateKeyToPEMString(privateKey)
+	if err != nil {
+		fmt.Println("Error converting private key to PEM:", err)
+		return
+	}
+	w.privateKey = privateKeyPEMStr
+
+	publicKeyPEMStr, err := publicKeyToPEMString(w.rawPublicKey)
+	if err != nil {
+		fmt.Println("Error converting private key to PEM:", err)
+		return
+	}
+	w.publicKey = publicKeyPEMStr
 }
 
 func privateKeyToPEMString(privKey *ecdsa.PrivateKey) (string, error) {
