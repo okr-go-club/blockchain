@@ -12,11 +12,12 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	"math/big"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Block struct {
@@ -220,26 +221,72 @@ func createTransaction(privateKey, fromAddress, toAddress string, amount, fee fl
 }
 
 type Blockchain struct {
-	transactions []Transaction
+	Blocks              []Block
+	PendingTransactions []Transaction
+	Difficulty          int
 }
 
-func (b *Blockchain) addTransaction(t Transaction) {
-	b.transactions = append(b.transactions, t)
+func (b *Blockchain) AddBlock(block Block) {
+	if len(b.Blocks) != 0 {
+		block.PreviousHash = b.Blocks[len(b.Blocks)-1].Hash
+	}
+	b.Blocks = append(b.Blocks, block)
 }
 
-func (b *Blockchain) getBalance(address string) float64 {
+func (b *Blockchain) AddTransactionToPending(t Transaction) {
+	b.PendingTransactions = append(b.PendingTransactions, t)
+}
+
+func (b *Blockchain) GetBalance(address string) float64 {
 	var balance float64 = 0
-	for _, t := range b.transactions {
-		switch address {
-		case t.ToAddress:
-			balance += t.Amount
-		case t.FromAddress:
-			balance -= t.Amount
-		default:
-			balance += 0
+	for _, block := range b.Blocks {
+		for _, t := range block.Transactions {
+			switch address {
+			case t.ToAddress:
+				balance += t.Amount
+			case t.FromAddress:
+				balance -= t.Amount
+			default:
+				balance += 0
+			}
 		}
 	}
 	return balance
+}
+
+func (b Blockchain) ValidateBlockchain() bool {
+	previousHash := ""
+	for index, block := range b.Blocks {
+		if index == 0 {
+			previousHash = block.Hash
+			continue
+		}
+		if block.Hash == "" || block.PreviousHash != previousHash {
+			return false
+		}
+	}
+	return true
+}
+
+func (b *Blockchain) CreateBlock(capacity int) Block {
+	transactions := b.PendingTransactions[0:capacity]
+	b.PendingTransactions = b.PendingTransactions[capacity:]
+	block := Block{
+		Transactions: transactions,
+		Timestamp:    time.Now().Unix(),
+		Capacity:     capacity,
+	}
+	return block
+}
+
+func InitBlockchain(difficulty int) Blockchain {
+	blockchain := Blockchain{Difficulty: difficulty}
+	block := Block{
+		Timestamp: time.Now().Unix(),
+	}
+	block.MineBlock(blockchain.Difficulty)
+	blockchain.AddBlock(block)
+	return blockchain
 }
 
 func main() {
@@ -271,10 +318,19 @@ func main() {
 	hash := t.calculateHash()
 	fmt.Println("Hash: ", hash)
 	fmt.Println("Signature is valid: ", t.IsValid())
-	b := Blockchain{}
-	b.addTransaction(t)
+	b := InitBlockchain(5)
 	fmt.Println(b)
-	fmt.Println(b.getBalance("0x123"))
+	fmt.Println(b.ValidateBlockchain())
+	b.AddTransactionToPending(Transaction{
+		Timestamp: int(time.Now().Unix()),
+	})
+	block := b.CreateBlock(1)
+	block.MineBlock(b.Difficulty)
+	b.AddBlock(block)
+	fmt.Println(b.ValidateBlockchain())
+	b.AddBlock(Block{})
+	fmt.Println(b.ValidateBlockchain())
+	fmt.Println(b.GetBalance("0x123"))
 }
 
 // Utility functions
