@@ -29,7 +29,7 @@ type Block struct {
 	Capacity     int
 }
 
-func (b *Block) CalculateHash() (string, error) {
+func (b *Block) CalculateHash() string {
 	// Объединяем содержимое блока, включая транзакции
 	blockContent := ""
 	for _, tx := range b.Transactions {
@@ -45,13 +45,13 @@ func (b *Block) CalculateHash() (string, error) {
 	hashHex := hex.EncodeToString(hash[:])
 
 	// Возвращаем хэш в виде строки
-	return hashHex, nil
+	return hashHex
 }
 
 func (b *Block) MineBlock(difficulty int) {
 	for {
 		// Вычисляем хэш блока
-		hash, _ := b.CalculateHash()
+		hash := b.CalculateHash()
 
 		// Берем первые несколько битов (размера difficulty) из хэша
 		prefix := strings.Repeat("0", difficulty)
@@ -67,10 +67,7 @@ func (b *Block) MineBlock(difficulty int) {
 }
 
 func (b *Block) ValidateBlock() bool {
-	calculatedHash, err := b.CalculateHash()
-	if err != nil {
-		return false
-	}
+	calculatedHash := b.CalculateHash()
 
 	if len(b.Transactions) > b.Capacity-1 {
 		return false
