@@ -268,7 +268,10 @@ func (b Blockchain) ValidateBlockchain() bool {
 	return true
 }
 
-func (b *Blockchain) CreateBlock(capacity int) Block {
+func (b *Blockchain) CreateBlock(capacity int) (Block, error) {
+	if len(b.PendingTransactions) < capacity {
+		return Block{}, errors.New("Pending transactions list is less than capacity")
+	}
 	transactions := b.PendingTransactions[0:capacity]
 	b.PendingTransactions = b.PendingTransactions[capacity:]
 	block := Block{
@@ -276,7 +279,7 @@ func (b *Blockchain) CreateBlock(capacity int) Block {
 		Timestamp:    time.Now().Unix(),
 		Capacity:     capacity,
 	}
-	return block
+	return block, nil
 }
 
 func InitBlockchain(difficulty int) Blockchain {
@@ -324,7 +327,13 @@ func main() {
 	b.AddTransactionToPending(Transaction{
 		Timestamp: int(time.Now().Unix()),
 	})
-	block := b.CreateBlock(1)
+	b.AddTransactionToPending(Transaction{
+		Timestamp: int(time.Now().Unix()),
+	})
+	block, err := b.CreateBlock(2)
+	if err != nil {
+		fmt.Println("Error while creating block:", err)
+	}
 	block.MineBlock(b.Difficulty)
 	b.AddBlock(block)
 	fmt.Println(b.ValidateBlockchain())
