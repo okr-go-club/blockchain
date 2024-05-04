@@ -1,21 +1,88 @@
 package main
 
 import (
-	"crypto"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
+	"encoding/asn1"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"strconv"
-	"time"
-
 	"github.com/google/uuid"
+	"math/big"
+	"strconv"
+	"strings"
+	"time"
 )
+
+type Block struct {
+	Transactions []Transaction
+	Timestamp    int64
+	PreviousHash string
+	Nonce        int
+	Hash         string
+	Capacity     int
+}
+
+func (b *Block) CalculateHash() (string, error) {
+	// Объединяем содержимое блока, включая транзакции
+	blockContent := ""
+	for _, tx := range b.Transactions {
+		blockContent += tx.GetDataString()
+	}
+
+	// Создаем byte array с blockContent
+	blockBytes := []byte(fmt.Sprintf("%d%s%s%d", b.Timestamp, b.PreviousHash, blockContent, b.Nonce))
+
+	// Получаем хэш блока с использованием SHA256
+	hash := sha256.Sum256(blockBytes)
+	// Кодируем хэш в строку
+	hashHex := hex.EncodeToString(hash[:])
+
+	// Возвращаем хэш в виде строки
+	return hashHex, nil
+}
+
+func (b *Block) MineBlock(difficulty int) {
+	for {
+		// Вычисляем хэш блока
+		hash, _ := b.CalculateHash()
+
+		// Берем первые несколько битов (размера difficulty) из хэша
+		prefix := strings.Repeat("0", difficulty)
+		if strings.HasPrefix(hash, prefix) {
+			// Nonce найден, блок майнится
+			b.Hash = hash
+			return
+		} else {
+			// Увеличиваем Nonce и пробуем снова
+			b.Nonce++
+		}
+	}
+}
+
+func (b *Block) ValidateBlock() bool {
+	calculatedHash, err := b.CalculateHash()
+	if err != nil {
+		return false
+	}
+
+	if len(b.Transactions) > b.Capacity-1 {
+		return false
+	}
+
+	for _, tx := range b.Transactions {
+		if !tx.IsValid() {
+			return false
+		}
+	}
+
+	return b.Hash == calculatedHash
+}
 
 type Transaction struct {
 	FromAddress   string
@@ -27,18 +94,18 @@ type Transaction struct {
 	Fee           float64
 }
 
-func (t *Transaction) calculateHash() string {
-	data := t.FromAddress +
+func (t *Transaction) GetDataString() string {
+	return t.FromAddress +
 		t.ToAddress +
 		fmt.Sprintf("%.2f", t.Amount) +
 		strconv.Itoa(t.Timestamp) +
 		t.TransactionId +
 		fmt.Sprintf("%.2f", t.Fee)
+}
 
-	h := sha256.New()
-	h.Write([]byte(data))
-	hashed := h.Sum(nil)
-	return hex.EncodeToString(hashed)
+func (t *Transaction) calculateHash() string {
+	hash := sha256.Sum256([]byte(t.GetDataString()))
+	return hex.EncodeToString(hash[:])
 }
 
 func (t *Transaction) IsValid() bool {
@@ -62,12 +129,12 @@ func (t *Transaction) IsValid() bool {
 }
 
 func (t *Transaction) Sign(privateKeyPEMStr string) error {
-	pem, _ := pem.Decode([]byte(privateKeyPEMStr))
-	if pem == nil {
+	pemBlock, _ := pem.Decode([]byte(privateKeyPEMStr))
+	if pemBlock == nil {
 		return errors.New("failed to parse PEM block containing the key")
 	}
 
-	privateKey, err := x509.ParsePKCS1PrivateKey(pem.Bytes)
+	privateKey, err := x509.ParseECPrivateKey(pemBlock.Bytes)
 	if err != nil {
 		return err
 	}
@@ -77,7 +144,13 @@ func (t *Transaction) Sign(privateKeyPEMStr string) error {
 		return err
 	}
 
-	signature, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, hash)
+	hashed := sha256.Sum256(hash)
+	r, s, err := ecdsa.Sign(rand.Reader, privateKey, hashed[:])
+	if err != nil {
+		return err
+	}
+
+	signature, err := asn1.Marshal(struct{ R, S *big.Int }{r, s})
 	if err != nil {
 		return err
 	}
@@ -87,22 +160,31 @@ func (t *Transaction) Sign(privateKeyPEMStr string) error {
 }
 
 func (t *Transaction) verifySignature() (bool, error) {
-	pem, _ := pem.Decode([]byte(t.FromAddress))
-	if pem == nil {
+	pemBlock, _ := pem.Decode([]byte(t.FromAddress))
+	if pemBlock == nil {
 		return false, errors.New("failed to parse PEM block containing the key")
 	}
 
-	publicKeyInterface, err := x509.ParsePKIXPublicKey(pem.Bytes)
+	publicKeyInterface, err := x509.ParsePKIXPublicKey(pemBlock.Bytes)
 	if err != nil {
 		return false, err
 	}
 
-	publicKey, ok := publicKeyInterface.(*rsa.PublicKey)
+	publicKey, ok := publicKeyInterface.(*ecdsa.PublicKey)
 	if !ok {
-		return false, errors.New("not RSA public key")
+		return false, errors.New("not ECDSA public key")
 	}
 
-	signature, err := base64.StdEncoding.DecodeString(t.Signature)
+	signatureBytes, err := base64.StdEncoding.DecodeString(t.Signature)
+	if err != nil {
+		return false, err
+	}
+
+	var sigStruct struct {
+		R, S *big.Int
+	}
+
+	_, err = asn1.Unmarshal(signatureBytes, &sigStruct)
 	if err != nil {
 		return false, err
 	}
@@ -112,9 +194,10 @@ func (t *Transaction) verifySignature() (bool, error) {
 		return false, err
 	}
 
-	err = rsa.VerifyPKCS1v15(publicKey, crypto.SHA256, hash, signature)
-	if err != nil {
-		return false, err
+	hashed := sha256.Sum256(hash)
+	valid := ecdsa.Verify(publicKey, hashed[:], sigStruct.R, sigStruct.S)
+	if !valid {
+		return false, errors.New("signature verification failed")
 	}
 
 	return true, nil
@@ -160,11 +243,23 @@ func (b *Blockchain) getBalance(address string) float64 {
 }
 
 func main() {
-	privateKeyPEMStr, publicKeyPEMStr, err := GenerateRSAKeys(4096)
+	w := new(Wallet)
+	w.keyGen()
+
+	privateKeyPEMStr, err := privateKeyToPEMString(w.privateKey)
 	if err != nil {
-		fmt.Println("Error generating RSA keys:", err)
+		fmt.Println("Error converting private key to PEM:", err)
 		return
 	}
+
+	publicKeyPEMStr, err := publicKeyToPEMString(w.publicKey)
+	if err != nil {
+		fmt.Println("Error converting private key to PEM:", err)
+		return
+	}
+
+	fmt.Println("PrivateKey is:", w.privateKey)
+	fmt.Println("PublicKey is:", w.publicKey)
 
 	t, err := createTransaction(privateKeyPEMStr, publicKeyPEMStr, "0x123", 5.0, 0.1)
 	if err != nil {
@@ -183,38 +278,43 @@ func main() {
 }
 
 // Utility functions
-func GenerateRSAKeys(bits int) (privateKeyPEMStr, publicKeyPEMStr string, err error) {
-	privatekey, err := rsa.GenerateKey(rand.Reader, bits)
+type Wallet struct {
+	privateKey *ecdsa.PrivateKey
+	publicKey  *ecdsa.PublicKey
+}
+
+func (w *Wallet) keyGen() {
+	privateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	w.privateKey = privateKey
+	w.publicKey = &w.privateKey.PublicKey
+}
+
+func privateKeyToPEMString(privKey *ecdsa.PrivateKey) (string, error) {
+	der, err := x509.MarshalECPrivateKey(privKey)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 
-	// convert to DER format for PEM encoding
-	privateDER := x509.MarshalPKCS1PrivateKey(privatekey)
-
-	// Create a PEM block for the private key
-	privateKeyBlock := &pem.Block{
-		Type:  "RSA Private Key",
-		Bytes: privateDER,
+	pemBlock := &pem.Block{
+		Type:  "EC PRIVATE KEY",
+		Bytes: der,
 	}
+	pemData := pem.EncodeToMemory(pemBlock)
 
-	// Encode the private key to PEM format and convert to string
-	privateKeyPEMStr = string(pem.EncodeToMemory(privateKeyBlock))
+	return string(pemData), nil
+}
 
-	// Extract the public key from the private key, marshal to DER format
-	publicDER, err := x509.MarshalPKIXPublicKey(&privatekey.PublicKey)
+func publicKeyToPEMString(pubKey *ecdsa.PublicKey) (string, error) {
+	der, err := x509.MarshalPKIXPublicKey(pubKey)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 
-	// Create a PEM block for the public key
-	publicKeyBlock := &pem.Block{
-		Type:  "RSA PUBLIC KEY",
-		Bytes: publicDER,
+	pemBlock := &pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: der,
 	}
+	pemData := pem.EncodeToMemory(pemBlock)
 
-	// Encode the public key to PEM format and convert to string
-	publicKeyPEMStr = string(pem.EncodeToMemory(publicKeyBlock))
-
-	return privateKeyPEMStr, publicKeyPEMStr, nil
+	return string(pemData), nil
 }
