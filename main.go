@@ -254,14 +254,14 @@ func (b *Blockchain) GetBalance(address string) float64 {
 	return balance
 }
 
-func (b Blockchain) ValidateBlockchain() bool {
+func (b Blockchain) isValid() bool {
 	previousHash := ""
 	for index, block := range b.Blocks {
 		if index == 0 {
 			previousHash = block.Hash
 			continue
 		}
-		if block.Hash == "" || block.PreviousHash != previousHash {
+		if block.ValidateBlock() || block.PreviousHash != previousHash {
 			return false
 		}
 	}
@@ -323,7 +323,7 @@ func main() {
 	fmt.Println("Signature is valid: ", t.IsValid())
 	b := InitBlockchain(5)
 	fmt.Println(b)
-	fmt.Println(b.ValidateBlockchain())
+	fmt.Println(b.isValid())
 	b.AddTransactionToPending(Transaction{
 		Timestamp: int(time.Now().Unix()),
 	})
@@ -336,9 +336,9 @@ func main() {
 	}
 	block.MineBlock(b.Difficulty)
 	b.AddBlock(block)
-	fmt.Println(b.ValidateBlockchain())
+	fmt.Println(b.isValid())
 	b.AddBlock(Block{})
-	fmt.Println(b.ValidateBlockchain())
+	fmt.Println(b.isValid())
 	fmt.Println(b.GetBalance("0x123"))
 }
 
