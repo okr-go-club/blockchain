@@ -230,7 +230,7 @@ func (b *Blockchain) AddBlock(block Block) {
 	b.Blocks = append(b.Blocks, block)
 }
 
-func (b *Blockchain) AddTransactionToPending(t Transaction) {
+func (b *Blockchain) AddTransactionToPool(t Transaction) {
 	b.PendingTransactions = append(b.PendingTransactions, t)
 }
 
@@ -281,11 +281,11 @@ func (b *Blockchain) CreateBlock(capacity int) (Block, error) {
 
 func InitBlockchain(difficulty int) Blockchain {
 	blockchain := Blockchain{Difficulty: difficulty}
-	block := Block{
+	genesisBlock := Block{
 		Timestamp: time.Now().Unix(),
 	}
-	block.MineBlock(blockchain.Difficulty)
-	blockchain.AddBlock(block)
+	genesisBlock.MineBlock(blockchain.Difficulty)
+	blockchain.AddBlock(genesisBlock)
 	return blockchain
 }
 
@@ -321,10 +321,10 @@ func main() {
 	b := InitBlockchain(5)
 	fmt.Println(b)
 	fmt.Println(b.isValid())
-	b.AddTransactionToPending(Transaction{
+	b.AddTransactionToPool(Transaction{
 		Timestamp: int(time.Now().Unix()),
 	})
-	b.AddTransactionToPending(Transaction{
+	b.AddTransactionToPool(Transaction{
 		Timestamp: int(time.Now().Unix()),
 	})
 	block, err := b.CreateBlock(2)
