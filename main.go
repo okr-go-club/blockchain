@@ -264,7 +264,7 @@ func (b Blockchain) IsValid() bool {
 	return true
 }
 
-func (chain *Blockchain) MinePendingTransactions(minerAddress string) error {
+func (chain *Blockchain) MinePendingTransactions(minerAddress string) {
 	currentPoolSize := len(chain.PendingTransactions)
 	var transactions []Transaction
 
@@ -295,8 +295,6 @@ func (chain *Blockchain) MinePendingTransactions(minerAddress string) error {
 
 	block.MineBlock(chain.Difficulty)
 	chain.AddBlock(block)
-
-	return nil
 }
 
 func InitBlockchain(difficulty, maxBlockSize int, miningReward float64) Blockchain {
@@ -362,11 +360,7 @@ func main() {
 	fmt.Print("\n\n")
 
 	fmt.Println("Mining...")
-	err = chain.MinePendingTransactions("0x123")
-	if err != nil {
-		fmt.Println("Error mining block:", err)
-		return
-	}
+	chain.MinePendingTransactions("0x123")
 	fmt.Println("Mining successful. New block added to the chain!")
 	fmt.Println("Blockchain is valid: ", chain.IsValid())
 	fmt.Print("\n\n")
