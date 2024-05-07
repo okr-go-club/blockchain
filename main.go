@@ -253,11 +253,14 @@ func (b *Blockchain) GetBalance(address string) float64 {
 func (b Blockchain) IsValid() bool {
 	previousHash := ""
 	for index, block := range b.Blocks {
-		if index == 0 && block.IsValid() {
+		if !block.IsValid() {
+			return false
+		}
+		if index == 0 {
 			previousHash = block.Hash
 			continue
 		}
-		if !block.IsValid() || block.PreviousHash != previousHash {
+		if block.PreviousHash != previousHash {
 			return false
 		}
 	}
