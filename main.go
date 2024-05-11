@@ -66,10 +66,10 @@ func (b *Block) MineBlock(difficulty int) {
 	}
 }
 
-func (b *Block) ValidateBlock() bool {
+func (b *Block) IsValid() bool {
 	calculatedHash := b.CalculateHash()
 
-	if len(b.Transactions) > b.Capacity-1 {
+	if len(b.Transactions) > b.Capacity {
 		return false
 	}
 
@@ -89,7 +89,6 @@ type Transaction struct {
 	Timestamp     int
 	TransactionId string
 	Signature     string
-	Fee           float64
 }
 
 func (t *Transaction) GetDataString() string {
@@ -97,8 +96,7 @@ func (t *Transaction) GetDataString() string {
 		t.ToAddress +
 		fmt.Sprintf("%.2f", t.Amount) +
 		strconv.Itoa(t.Timestamp) +
-		t.TransactionId +
-		fmt.Sprintf("%.2f", t.Fee)
+		t.TransactionId
 }
 
 func (t *Transaction) calculateHash() string {
@@ -201,14 +199,13 @@ func (t *Transaction) verifySignature() (bool, error) {
 	return true, nil
 }
 
-func createTransaction(privateKey, fromAddress, toAddress string, amount, fee float64) (Transaction, error) {
+func createTransaction(privateKey, fromAddress, toAddress string, amount float64) (Transaction, error) {
 	t := Transaction{
 		FromAddress:   fromAddress,
 		ToAddress:     toAddress,
 		Amount:        amount,
 		Timestamp:     int(time.Now().Unix()),
 		TransactionId: uuid.New().String(),
-		Fee:           fee,
 	}
 	err := t.Sign(privateKey)
 	if err != nil {
@@ -221,6 +218,8 @@ type Blockchain struct {
 	Blocks              []Block
 	PendingTransactions []Transaction
 	Difficulty          int
+	MaxBlockSize        int
+	MiningReward        float64
 }
 
 func (b *Blockchain) AddBlock(block Block) {
@@ -251,14 +250,17 @@ func (b *Blockchain) GetBalance(address string) float64 {
 	return balance
 }
 
-func (b Blockchain) isValid() bool {
+func (b Blockchain) IsValid() bool {
 	previousHash := ""
 	for index, block := range b.Blocks {
+		if !block.IsValid() {
+			return false
+		}
 		if index == 0 {
 			previousHash = block.Hash
 			continue
 		}
-		if block.ValidateBlock() || block.PreviousHash != previousHash {
+		if block.PreviousHash != previousHash {
 			return false
 		}
 		previousHash = block.Hash
@@ -266,22 +268,41 @@ func (b Blockchain) isValid() bool {
 	return true
 }
 
-func (b *Blockchain) CreateBlock(capacity int) (Block, error) {
-	if len(b.PendingTransactions) < capacity {
-		return Block{}, errors.New("Pending transactions list is less than capacity")
+func (chain *Blockchain) MinePendingTransactions(minerAddress string) {
+	currentPoolSize := len(chain.PendingTransactions)
+	var transactions []Transaction
+
+	if currentPoolSize < chain.MaxBlockSize {
+		transactions = chain.PendingTransactions[0:currentPoolSize]
+		chain.PendingTransactions = chain.PendingTransactions[currentPoolSize:]
+	} else {
+		transactions = chain.PendingTransactions[0:chain.MaxBlockSize-1]
+		chain.PendingTransactions = chain.PendingTransactions[chain.MaxBlockSize-1:]
 	}
-	transactions := b.PendingTransactions[0:capacity]
-	b.PendingTransactions = b.PendingTransactions[capacity:]
+
+	rewardTx := Transaction{
+		FromAddress:   "",
+		ToAddress:     minerAddress,
+		Amount:        chain.MiningReward,
+		Timestamp:     int(time.Now().Unix()),
+		TransactionId: uuid.New().String(),
+	}
+	transactions = append(transactions, rewardTx)
+
 	block := Block{
 		Transactions: transactions,
 		Timestamp:    time.Now().Unix(),
-		Capacity:     capacity,
+		Capacity:    chain.MaxBlockSize,
+		PreviousHash: chain.Blocks[len(chain.Blocks)-1].Hash,
 	}
-	return block, nil
+	block.Hash = block.CalculateHash()
+
+	block.MineBlock(chain.Difficulty)
+	chain.AddBlock(block)
 }
 
-func InitBlockchain(difficulty int) Blockchain {
-	blockchain := Blockchain{Difficulty: difficulty}
+func InitBlockchain(difficulty, maxBlockSize int, miningReward float64) Blockchain {
+	blockchain := Blockchain{Difficulty: difficulty, MaxBlockSize: maxBlockSize, MiningReward: miningReward}
 	genesisBlock := Block{
 		Timestamp: time.Now().Unix(),
 	}
@@ -293,42 +314,72 @@ func InitBlockchain(difficulty int) Blockchain {
 func main() {
 	w := new(Wallet)
 	w.keyGen()
+	fmt.Println("Successfully generate wallet keys!")
+	fmt.Print("\n\n")
 
-	fmt.Println("PrivateKey is:", w.privateKey)
-	fmt.Println("PublicKey is:", w.publicKey)
+	chain := InitBlockchain(5, 5, 5)
+	fmt.Println("Successfully initialized blockchain!")
+	fmt.Println("Blockchain is valid: ", chain.IsValid())
+	fmt.Print("\n\n")
 
-	t, err := createTransaction(w.privateKey, w.publicKey, "0x123", 5.0, 0.1)
+	fmt.Println("Balance of 0x123 before mining:", chain.GetBalance("0x123"))
+	fmt.Println("Adding transactions to the pool...")
+
+	t1, err := createTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
 	if err != nil {
 		fmt.Println("Error creating transaction:", err)
 		return
 	}
+	chain.AddTransactionToPool(t1)
 
-	fmt.Println("Transaction: ", t)
-	hash := t.calculateHash()
-	fmt.Println("Hash: ", hash)
-	fmt.Println("Signature is valid: ", t.IsValid())
-	b := InitBlockchain(5)
-	fmt.Println(b)
-	fmt.Println(b.isValid())
-	b.AddTransactionToPool(Transaction{
-		Timestamp: int(time.Now().Unix()),
-	})
-	b.AddTransactionToPool(Transaction{
-		Timestamp: int(time.Now().Unix()),
-	})
-	block, err := b.CreateBlock(2)
+	t2, err := createTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
 	if err != nil {
-		fmt.Println("Error while creating block:", err)
+		fmt.Println("Error creating transaction:", err)
+		return
 	}
-	block.MineBlock(b.Difficulty)
-	b.AddBlock(block)
-	fmt.Println(b.isValid())
-	b.AddBlock(Block{})
-	fmt.Println(b.isValid())
-	fmt.Println(b.GetBalance("0x123"))
+	chain.AddTransactionToPool(t2)
+
+	t3, err := createTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
+	if err != nil {
+		fmt.Println("Error creating transaction:", err)
+		return
+	}
+	chain.AddTransactionToPool(t3)
+
+	t4, err := createTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
+	if err != nil {
+		fmt.Println("Error creating transaction:", err)
+		return
+	}
+	chain.AddTransactionToPool(t4)
+
+	t5, err := createTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
+	if err != nil {
+		fmt.Println("Error creating transaction:", err)
+		return
+	}
+	chain.AddTransactionToPool(t5)
+
+	fmt.Println("Length of pending transactions:", len(chain.PendingTransactions))
+	fmt.Print("\n\n")
+
+	fmt.Println("Mining...")
+	chain.MinePendingTransactions("0x123")
+	fmt.Println("Mining successful. New block added to the chain!")
+	fmt.Println("Blockchain is valid: ", chain.IsValid())
+	fmt.Print("\n\n")
+
+	fmt.Println("Balance of 0x123 after mining:", chain.GetBalance("0x123"))
+	fmt.Print("\n\n")
+	
+	fmt.Println("Length of pending transactions after mining:", len(chain.PendingTransactions))
+	fmt.Print("\n\n")
+
+	fmt.Println("Adding invalid block to the chain...")
+	chain.AddBlock(Block{})
+	fmt.Println("Blockchain is valid: ", chain.IsValid())
 }
 
-// Utility functions
 type Wallet struct {
 	privateKey string
 	publicKey  string
