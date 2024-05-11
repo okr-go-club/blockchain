@@ -261,6 +261,7 @@ func (b Blockchain) isValid() bool {
 		if block.ValidateBlock() || block.PreviousHash != previousHash {
 			return false
 		}
+		previousHash = block.Hash
 	}
 	return true
 }
