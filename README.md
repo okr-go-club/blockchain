@@ -13,7 +13,3 @@ go run main.go p2p.go chain.go -address localhost:8081 -peers localhost:8080
 
 go run main.go p2p.go chain.go -address localhost:8082 -peers localhost:8080,localhost:8081
 ```
-
-### Todos
-- Remove peer from peers and connections if peer is unavailable or dropper the connection
-- Integrate one blockchain to the whole network
