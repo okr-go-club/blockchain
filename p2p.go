@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
@@ -70,6 +71,14 @@ func (node *Node) HandleConnection(conn net.Conn) {
 	conn.Write([]byte(selfMessage))
 	fmt.Println("Notified peer about self:", selfMessage)
 
+	// for {
+	// 	message, err := reader.ReadString('\n')
+	// 	if err != nil {
+	// 		fmt.Println("Error reading from connection:", err)
+	// 		return
+	// 	}
+	// 	fmt.Println("Received:", message)
+	// }
 	for {
 		message, err := reader.ReadString('\n')
 		if err != nil {
@@ -77,6 +86,39 @@ func (node *Node) HandleConnection(conn net.Conn) {
 			return
 		}
 		fmt.Println("Received:", message)
+
+		// Process received message
+		var msgMap map[string]interface{}
+		err = json.Unmarshal([]byte(message), &msgMap)
+		if err != nil {
+			fmt.Println("Error unmarshalling message:", err)
+			continue
+		}
+
+		if msgType, ok := msgMap["type"]; ok {
+			switch msgType {
+			case "transaction":
+				var tx Transaction
+				err = json.Unmarshal([]byte(message), &tx)
+				if err != nil {
+					fmt.Println("Error unmarshalling transaction:", err)
+				} else {
+					fmt.Println("Received transaction:", tx)
+				}
+			case "block":
+				var block Block
+				err = json.Unmarshal([]byte(message), &block)
+				if err != nil {
+					fmt.Println("Error unmarshalling block:", err)
+				} else {
+					fmt.Println("Received block:", block)
+				}
+			default:
+				fmt.Println("Unknown message type")
+			}
+		} else {
+			fmt.Println("Message does not contain a type")
+		}
 	}
 }
 
@@ -124,4 +166,28 @@ func (node *Node) BroadcastMessage(message string) {
 			fmt.Println("Error writing to peer", address, ":", err)
 		}
 	}
+}
+
+func (node *Node) BroadcastTransaction(tx Transaction) {
+	txJson, err := json.Marshal(struct {
+		Type        string      `json:"type"`
+		Transaction Transaction `json:"transaction"`
+	}{"transaction", tx})
+	if err != nil {
+		fmt.Println("Error marshalling transaction:", err)
+		return
+	}
+	node.BroadcastMessage(string(txJson))
+}
+
+func (node *Node) BroadcastBlock(block Block) {
+	blockJson, err := json.Marshal(struct {
+		Type  string `json:"type"`
+		Block Block  `json:"block"`
+	}{"block", block})
+	if err != nil {
+		fmt.Println("Error marshalling block:", err)
+		return
+	}
+	node.BroadcastMessage(string(blockJson))
 }

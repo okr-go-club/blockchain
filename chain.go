@@ -21,12 +21,12 @@ import (
 )
 
 type Block struct {
-	Transactions []Transaction
-	Timestamp    int64
-	PreviousHash string
-	Nonce        int
-	Hash         string
-	Capacity     int
+	Transactions []Transaction `json:"transactions"`
+	Timestamp    int64         `json:"timestamp"`
+	PreviousHash string        `json:"previousHash"`
+	Nonce        int           `json:"nonce"`
+	Hash         string        `json:"hash"`
+	Capacity     int           `json:"capacity"`
 }
 
 func (b *Block) CalculateHash() string {
@@ -83,12 +83,12 @@ func (b *Block) IsValid() bool {
 }
 
 type Transaction struct {
-	FromAddress   string
-	ToAddress     string
-	Amount        float64
-	Timestamp     int
-	TransactionId string
-	Signature     string
+	FromAddress   string  `json:"fromAddress"`
+	ToAddress     string  `json:"toAddress"`
+	Amount        float64 `json:"amount"`
+	Timestamp     int     `json:"timestamp"`
+	TransactionId string  `json:"transactionId"`
+	Signature     string  `json:"signature"`
 }
 
 func (t *Transaction) GetDataString() string {
@@ -199,7 +199,7 @@ func (t *Transaction) verifySignature() (bool, error) {
 	return true, nil
 }
 
-func createTransaction(privateKey, fromAddress, toAddress string, amount float64) (Transaction, error) {
+func NewTransaction(privateKey, fromAddress, toAddress string, amount float64) (Transaction, error) {
 	t := Transaction{
 		FromAddress:   fromAddress,
 		ToAddress:     toAddress,
@@ -276,7 +276,7 @@ func (chain *Blockchain) MinePendingTransactions(minerAddress string) {
 		transactions = chain.PendingTransactions[0:currentPoolSize]
 		chain.PendingTransactions = chain.PendingTransactions[currentPoolSize:]
 	} else {
-		transactions = chain.PendingTransactions[0:chain.MaxBlockSize-1]
+		transactions = chain.PendingTransactions[0 : chain.MaxBlockSize-1]
 		chain.PendingTransactions = chain.PendingTransactions[chain.MaxBlockSize-1:]
 	}
 
@@ -292,7 +292,7 @@ func (chain *Blockchain) MinePendingTransactions(minerAddress string) {
 	block := Block{
 		Transactions: transactions,
 		Timestamp:    time.Now().Unix(),
-		Capacity:    chain.MaxBlockSize,
+		Capacity:     chain.MaxBlockSize,
 		PreviousHash: chain.Blocks[len(chain.Blocks)-1].Hash,
 	}
 	block.Hash = block.CalculateHash()

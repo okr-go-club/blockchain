@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 func main() {
@@ -23,16 +26,48 @@ func main() {
 		}
 	}
 
+	// go func() {
+	// 	stdReader := bufio.NewReader(os.Stdin)
+	// 	for {
+	// 		fmt.Print("Enter message to broadcast: ")
+	// 		msg, err := stdReader.ReadString('\n')
+	// 		if err != nil {
+	// 			fmt.Println("Error reading from stdin:", err)
+	// 			return
+	// 		}
+	// 		node.BroadcastMessage(strings.TrimSpace(msg))
+	// 	}
+	// }()
 	go func() {
 		stdReader := bufio.NewReader(os.Stdin)
 		for {
-			fmt.Print("Enter message to broadcast: ")
+			fmt.Print("Enter message to broadcast (transaction/block): ")
 			msg, err := stdReader.ReadString('\n')
 			if err != nil {
 				fmt.Println("Error reading from stdin:", err)
 				return
 			}
-			node.BroadcastMessage(strings.TrimSpace(msg))
+			msg = strings.TrimSpace(msg)
+			if msg == "transaction" {
+				tx := Transaction{
+					FromAddress:   "Alice",
+					ToAddress:     "Bob",
+					Amount:        5.00,
+					Timestamp:     int(time.Now().Unix()),
+					TransactionId: uuid.New().String(),
+				}
+				node.BroadcastTransaction(tx)
+			} else if msg == "block" {
+				block := Block{
+					Transactions: nil,
+					Timestamp:    time.Now().Unix(),
+					Capacity:    5,
+					PreviousHash: "previousHash",
+				}
+				node.BroadcastBlock(block)
+			} else {
+				fmt.Println("Unknown message type")
+			}
 		}
 	}()
 
@@ -53,35 +88,35 @@ func test() {
 	fmt.Println("Balance of 0x123 before mining:", chain.GetBalance("0x123"))
 	fmt.Println("Adding transactions to the pool...")
 
-	t1, err := createTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
+	t1, err := NewTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
 	if err != nil {
 		fmt.Println("Error creating transaction:", err)
 		return
 	}
 	chain.AddTransactionToPool(t1)
 
-	t2, err := createTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
+	t2, err := NewTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
 	if err != nil {
 		fmt.Println("Error creating transaction:", err)
 		return
 	}
 	chain.AddTransactionToPool(t2)
 
-	t3, err := createTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
+	t3, err := NewTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
 	if err != nil {
 		fmt.Println("Error creating transaction:", err)
 		return
 	}
 	chain.AddTransactionToPool(t3)
 
-	t4, err := createTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
+	t4, err := NewTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
 	if err != nil {
 		fmt.Println("Error creating transaction:", err)
 		return
 	}
 	chain.AddTransactionToPool(t4)
 
-	t5, err := createTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
+	t5, err := NewTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
 	if err != nil {
 		fmt.Println("Error creating transaction:", err)
 		return
