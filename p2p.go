@@ -73,6 +73,8 @@ func ProcessMessage (message string, chain *Blockchain) error {
 				return err
 			} else {
 				fmt.Println("Received block:", block)
+				chain.AddBlock(block)
+				fmt.Println("Blocks:", chain.Blocks)
 			}
 		default:
 			fmt.Println("Unknown message type")

@@ -43,7 +43,8 @@ func main() {
 				return
 			}
 			msg = strings.TrimSpace(msg)
-			if msg == "transaction" {
+			switch msg {
+			case "transaction":
 				tx := Transaction{
 					FromAddress:   "Alice",
 					ToAddress:     "Bob",
@@ -52,7 +53,7 @@ func main() {
 					TransactionId: uuid.New().String(),
 				}
 				node.BroadcastTransaction(tx)
-			} else if msg == "block" {
+			case "block":
 				block := Block{
 					Transactions: nil,
 					Timestamp:    time.Now().Unix(),
@@ -60,7 +61,7 @@ func main() {
 					PreviousHash: "previousHash",
 				}
 				node.BroadcastBlock(block)
-			} else {
+			default:
 				fmt.Println("Unknown message type")
 			}
 		}
