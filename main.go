@@ -4,41 +4,25 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"net"
 	"os"
 	"strings"
-	"sync"
 )
 
-type Node struct {
-	Address     string
-	Peers       []string
-	Connections map[string]net.Conn
-	Mutex       sync.Mutex
-}
-
 func main() {
-	// Parse command-line arguments
 	listenAddress := flag.String("address", "localhost:8080", "Address to listen on")
 	peers := flag.String("peers", "", "Comma-separated list of peers to connect to")
 	flag.Parse()
 
-	node := Node{
-		Address:     *listenAddress,
-		Peers:       strings.Split(*peers, ","),
-		Connections: make(map[string]net.Conn),
-	}
+	node := NewNode(*listenAddress, strings.Split(*peers, ","))
 
-	go startServer(&node)
+	go node.StartServer()
 
-	// Connect to peers
 	for _, peer := range node.Peers {
 		if peer != "" {
-			go connectToPeer(&node, peer)
+			go node.ConnectToPeer(peer)
 		}
 	}
 
-	// Read user input to broadcast messages
 	go func() {
 		stdReader := bufio.NewReader(os.Stdin)
 		for {
@@ -48,118 +32,78 @@ func main() {
 				fmt.Println("Error reading from stdin:", err)
 				return
 			}
-			node.broadcastMessage(strings.TrimSpace(msg))
+			node.BroadcastMessage(strings.TrimSpace(msg))
 		}
 	}()
 
-	select {} // Keep the main function running
+	select {}
 }
 
-func startServer(node *Node) {
-	listener, err := net.Listen("tcp", node.Address)
+func test() {
+	w := new(Wallet)
+	w.keyGen()
+	fmt.Println("Successfully generate wallet keys!")
+	fmt.Print("\n\n")
+
+	chain := InitBlockchain(5, 5, 5)
+	fmt.Println("Successfully initialized blockchain!")
+	fmt.Println("Blockchain is valid: ", chain.IsValid())
+	fmt.Print("\n\n")
+
+	fmt.Println("Balance of 0x123 before mining:", chain.GetBalance("0x123"))
+	fmt.Println("Adding transactions to the pool...")
+
+	t1, err := createTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
 	if err != nil {
-		fmt.Println("Error starting server:", err)
-		os.Exit(1)
-	}
-	defer listener.Close()
-
-	fmt.Println("Server started on", node.Address)
-	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			fmt.Println("Error accepting connection:", err)
-			continue
-		}
-		go handleConnection(conn, node)
-	}
-}
-
-func handleConnection(conn net.Conn, node *Node) {
-	defer conn.Close()
-	reader := bufio.NewReader(conn)
-
-	// Read initial hello message
-	message, err := reader.ReadString('\n')
-	if err != nil {
-		fmt.Println("Error reading from connection:", err)
+		fmt.Println("Error creating transaction:", err)
 		return
 	}
-	fmt.Println("Received:", message)
+	chain.AddTransactionToPool(t1)
 
-	// Read peer address
-	message, err = reader.ReadString('\n')
+	t2, err := createTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
 	if err != nil {
-		fmt.Println("Error reading from connection:", err)
+		fmt.Println("Error creating transaction:", err)
 		return
 	}
-	fmt.Println("Received peer address:", message)
+	chain.AddTransactionToPool(t2)
 
-	peerAddress := strings.TrimSpace(message)
-	node.Mutex.Lock()
-	node.Connections[peerAddress] = conn
-	node.Mutex.Unlock()
-
-	// Notify the peer about itself
-	selfMessage := "PEER:" + node.Address + "\n"
-	conn.Write([]byte(selfMessage))
-	fmt.Println("Notified peer about self:", selfMessage)
-
-	// Keep the connection open to read messages
-	for {
-		message, err := reader.ReadString('\n')
-		if err != nil {
-			fmt.Println("Error reading from connection:", err)
-			return
-		}
-		fmt.Println("Received:", message)
-	}
-}
-
-func connectToPeer(node *Node, address string) {
-	conn, err := net.Dial("tcp", address)
+	t3, err := createTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
 	if err != nil {
-		fmt.Println("Error connecting to peer:", err)
+		fmt.Println("Error creating transaction:", err)
 		return
 	}
+	chain.AddTransactionToPool(t3)
 
-	// Send initial hello message
-	message := "Hello, Blockchain!\n"
-	conn.Write([]byte(message))
-	fmt.Println("Sent:", message)
-
-	// Send node's address
-	conn.Write([]byte(node.Address + "\n"))
-	fmt.Println("Sent address:", node.Address)
-
-	node.Mutex.Lock()
-	node.Connections[address] = conn
-	node.Mutex.Unlock()
-	fmt.Println("Connected to peer:", address)
-
-	// Keep the connection open to read messages
-	go readData(conn)
-}
-
-func readData(conn net.Conn) {
-	reader := bufio.NewReader(conn)
-	for {
-		message, err := reader.ReadString('\n')
-		if err != nil {
-			fmt.Println("Error reading from connection:", err)
-			return
-		}
-		fmt.Println("Received:", message)
+	t4, err := createTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
+	if err != nil {
+		fmt.Println("Error creating transaction:", err)
+		return
 	}
-}
+	chain.AddTransactionToPool(t4)
 
-func (node *Node) broadcastMessage(message string) {
-	node.Mutex.Lock()
-	defer node.Mutex.Unlock()
-
-	for address, conn := range node.Connections {
-		_, err := conn.Write([]byte(message + "\n"))
-		if err != nil {
-			fmt.Println("Error writing to peer", address, ":", err)
-		}
+	t5, err := createTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
+	if err != nil {
+		fmt.Println("Error creating transaction:", err)
+		return
 	}
+	chain.AddTransactionToPool(t5)
+
+	fmt.Println("Length of pending transactions:", len(chain.PendingTransactions))
+	fmt.Print("\n\n")
+
+	fmt.Println("Mining...")
+	chain.MinePendingTransactions("0x123")
+	fmt.Println("Mining successful. New block added to the chain!")
+	fmt.Println("Blockchain is valid: ", chain.IsValid())
+	fmt.Print("\n\n")
+
+	fmt.Println("Balance of 0x123 after mining:", chain.GetBalance("0x123"))
+	fmt.Print("\n\n")
+	
+	fmt.Println("Length of pending transactions after mining:", len(chain.PendingTransactions))
+	fmt.Print("\n\n")
+
+	fmt.Println("Adding invalid block to the chain...")
+	chain.AddBlock(Block{})
+	fmt.Println("Blockchain is valid: ", chain.IsValid())
 }
