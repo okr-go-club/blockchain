@@ -25,7 +25,7 @@ func NewNode(address string, peers []string) *Node {
 	}
 }
 
-func (node *Node) StartServer() {
+func (node *Node) StartServer(chain *Blockchain) {
 	listener, err := net.Listen("tcp", node.Address)
 	if err != nil {
 		fmt.Println("Error starting server:", err)
@@ -40,89 +40,98 @@ func (node *Node) StartServer() {
 			fmt.Println("Error accepting connection:", err)
 			continue
 		}
-		go node.HandleConnection(conn)
+		go node.HandleConnection(conn, chain)
 	}
 }
 
-func (node *Node) HandleConnection(conn net.Conn) {
-	defer conn.Close()
-	reader := bufio.NewReader(conn)
-
-	message, err := reader.ReadString('\n')
+func ProcessMessage (message string, chain *Blockchain) error {
+	var msgMap map[string]interface{}
+	err := json.Unmarshal([]byte(message), &msgMap)
 	if err != nil {
-		fmt.Println("Error reading from connection:", err)
-		return
+		fmt.Println("Error unmarshalling message:", err)
+		return err
 	}
-	fmt.Println("Received:", message)
 
-	message, err = reader.ReadString('\n')
-	if err != nil {
-		fmt.Println("Error reading from connection:", err)
-		return
+	if msgType, ok := msgMap["type"]; ok {
+		switch msgType {
+		case "transaction":
+			var tx Transaction
+			err = json.Unmarshal([]byte(message), &tx)
+			if err != nil {
+				fmt.Println("Error unmarshalling transaction:", err)
+				return err
+			} else {
+				fmt.Println("Received transaction:", tx)
+				chain.AddTransactionToPool(tx)
+				fmt.Println("Transaction pool:", chain.PendingTransactions)
+			}
+		case "block":
+			var block Block
+			err = json.Unmarshal([]byte(message), &block)
+			if err != nil {
+				fmt.Println("Error unmarshalling block:", err)
+				return err
+			} else {
+				fmt.Println("Received block:", block)
+			}
+		default:
+			fmt.Println("Unknown message type")
+		}
+	} else {
+		fmt.Println("Message does not contain a type")
 	}
-	fmt.Println("Received peer address:", message)
 
-	peerAddress := strings.TrimSpace(message)
-	node.Mutex.Lock()
-	node.Connections[peerAddress] = conn
-	node.Mutex.Unlock()
+	return nil
+}
 
-	selfMessage := "PEER:" + node.Address + "\n"
-	conn.Write([]byte(selfMessage))
-	fmt.Println("Notified peer about self:", selfMessage)
+func (node *Node) HandleConnection(conn net.Conn, chain *Blockchain) {
+    defer conn.Close()
+    reader := bufio.NewReader(conn)
 
-	// for {
-	// 	message, err := reader.ReadString('\n')
-	// 	if err != nil {
-	// 		fmt.Println("Error reading from connection:", err)
-	// 		return
-	// 	}
-	// 	fmt.Println("Received:", message)
-	// }
-	for {
-		message, err := reader.ReadString('\n')
+    // Read initial hello message
+    message, err := reader.ReadString('\n')
+    if err != nil {
+        fmt.Println("Error reading from connection:", err)
+        return
+    }
+    fmt.Println("Received Initial:", message)
+
+    // Read peer address
+    message, err = reader.ReadString('\n')
+    if err != nil {
+        fmt.Println("Error reading from connection:", err)
+        return
+    }
+    fmt.Println("Received peer address:", message)
+
+    peerAddress := strings.TrimSpace(message)
+    node.Mutex.Lock()
+    node.Connections[peerAddress] = conn
+    node.Mutex.Unlock()
+
+    // Notify the peer about itself
+    selfMessage := "PEER:" + node.Address + "\n"
+    conn.Write([]byte(selfMessage))
+    fmt.Println("Notified peer about self:", selfMessage)
+
+    // Keep the connection open to read messages
+    for {
+        message, err := reader.ReadString('\n')
+        if err != nil {
+            fmt.Println("Error reading from connection:", err)
+            return
+        }
+        fmt.Println("Received Message:", message)
+
+        err = ProcessMessage(message, chain)
 		if err != nil {
-			fmt.Println("Error reading from connection:", err)
+			fmt.Println("Error processing message:", err)
 			return
 		}
-		fmt.Println("Received:", message)
-
-		// Process received message
-		var msgMap map[string]interface{}
-		err = json.Unmarshal([]byte(message), &msgMap)
-		if err != nil {
-			fmt.Println("Error unmarshalling message:", err)
-			continue
-		}
-
-		if msgType, ok := msgMap["type"]; ok {
-			switch msgType {
-			case "transaction":
-				var tx Transaction
-				err = json.Unmarshal([]byte(message), &tx)
-				if err != nil {
-					fmt.Println("Error unmarshalling transaction:", err)
-				} else {
-					fmt.Println("Received transaction:", tx)
-				}
-			case "block":
-				var block Block
-				err = json.Unmarshal([]byte(message), &block)
-				if err != nil {
-					fmt.Println("Error unmarshalling block:", err)
-				} else {
-					fmt.Println("Received block:", block)
-				}
-			default:
-				fmt.Println("Unknown message type")
-			}
-		} else {
-			fmt.Println("Message does not contain a type")
-		}
-	}
+    }
 }
 
-func (node *Node) ConnectToPeer(address string) {
+func (node *Node) ConnectToPeer(address string, chain *Blockchain) {
 	conn, err := net.Dial("tcp", address)
 	if err != nil {
 		fmt.Println("Error connecting to peer:", err)
@@ -141,10 +150,10 @@ func (node *Node) ConnectToPeer(address string) {
 	node.Mutex.Unlock()
 	fmt.Println("Connected to peer:", address)
 
-	go node.ReadData(conn)
+	go node.ReadData(conn, chain)
 }
 
-func (node *Node) ReadData(conn net.Conn) {
+func (node *Node) ReadData(conn net.Conn, chain *Blockchain) {
 	reader := bufio.NewReader(conn)
 	for {
 		message, err := reader.ReadString('\n')
@@ -152,7 +161,8 @@ func (node *Node) ReadData(conn net.Conn) {
 			fmt.Println("Error reading from connection:", err)
 			return
 		}
-		fmt.Println("Received:", message)
+		fmt.Println("Received in ReadData:", message)
+		ProcessMessage(message, chain)
 	}
 }
 

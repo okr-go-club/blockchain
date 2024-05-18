@@ -316,7 +316,7 @@ type Wallet struct {
 	publicKey  string
 }
 
-func (w *Wallet) keyGen() {
+func (w *Wallet) KeyGen() {
 	privateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	privateKeyPEMStr, err := privateKeyToPEMString(privateKey)
 	if err != nil {

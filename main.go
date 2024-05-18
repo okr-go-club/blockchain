@@ -12,32 +12,27 @@ import (
 )
 
 func main() {
+	w := new(Wallet)
+	w.KeyGen()
+	fmt.Println("Public key:", w.publicKey)
+	fmt.Println("Private key:", w.privateKey)
+
+	chain := InitBlockchain(5, 5, 5)
+
 	listenAddress := flag.String("address", "localhost:8080", "Address to listen on")
 	peers := flag.String("peers", "", "Comma-separated list of peers to connect to")
 	flag.Parse()
 
 	node := NewNode(*listenAddress, strings.Split(*peers, ","))
 
-	go node.StartServer()
+	go node.StartServer(&chain)
 
 	for _, peer := range node.Peers {
 		if peer != "" {
-			go node.ConnectToPeer(peer)
+			go node.ConnectToPeer(peer, &chain)
 		}
 	}
 
-	// go func() {
-	// 	stdReader := bufio.NewReader(os.Stdin)
-	// 	for {
-	// 		fmt.Print("Enter message to broadcast: ")
-	// 		msg, err := stdReader.ReadString('\n')
-	// 		if err != nil {
-	// 			fmt.Println("Error reading from stdin:", err)
-	// 			return
-	// 		}
-	// 		node.BroadcastMessage(strings.TrimSpace(msg))
-	// 	}
-	// }()
 	go func() {
 		stdReader := bufio.NewReader(os.Stdin)
 		for {
@@ -76,7 +71,7 @@ func main() {
 
 func test() {
 	w := new(Wallet)
-	w.keyGen()
+	w.KeyGen()
 	fmt.Println("Successfully generate wallet keys!")
 	fmt.Print("\n\n")
 
