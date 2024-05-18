@@ -44,7 +44,7 @@ func (node *Node) StartServer(chain *Blockchain) {
 	}
 }
 
-func ProcessMessage (message string, chain *Blockchain) error {
+func ProcessMessage(message string, chain *Blockchain) error {
 	var msgMap map[string]interface{}
 	err := json.Unmarshal([]byte(message), &msgMap)
 	if err != nil {
@@ -87,50 +87,51 @@ func ProcessMessage (message string, chain *Blockchain) error {
 }
 
 func (node *Node) HandleConnection(conn net.Conn, chain *Blockchain) {
-    defer conn.Close()
-    reader := bufio.NewReader(conn)
+	defer conn.Close()
+	reader := bufio.NewReader(conn)
 
-    // Read initial hello message
-    message, err := reader.ReadString('\n')
-    if err != nil {
-        fmt.Println("Error reading from connection:", err)
-        return
-    }
-    fmt.Println("Received Initial:", message)
+	// Read initial hello message
+	message, err := reader.ReadString('\n')
+	if err != nil {
+		fmt.Println("Error reading from connection:", err)
+		node.RemoveConnection(conn.RemoteAddr().String())
+		return
+	}
+	fmt.Println("Received Initial:", message)
 
-    // Read peer address
-    message, err = reader.ReadString('\n')
-    if err != nil {
-        fmt.Println("Error reading from connection:", err)
-        return
-    }
-    fmt.Println("Received peer address:", message)
+	// Read peer address
+	message, err = reader.ReadString('\n')
+	if err != nil {
+		fmt.Println("Error reading from connection:", err)
+		node.RemoveConnection(conn.RemoteAddr().String())
+		return
+	}
+	fmt.Println("Received peer address:", message)
 
-    peerAddress := strings.TrimSpace(message)
-    node.Mutex.Lock()
-    node.Connections[peerAddress] = conn
-    node.Mutex.Unlock()
+	peerAddress := strings.TrimSpace(message)
+	node.AddConnection(peerAddress, conn)
 
-    // Notify the peer about itself
-    selfMessage := "PEER:" + node.Address + "\n"
-    conn.Write([]byte(selfMessage))
-    fmt.Println("Notified peer about self:", selfMessage)
+	// Notify the peer about itself
+	selfMessage := "PEER:" + node.Address + "\n"
+	conn.Write([]byte(selfMessage))
+	fmt.Println("Notified peer about self:", selfMessage)
 
-    // Keep the connection open to read messages
-    for {
-        message, err := reader.ReadString('\n')
-        if err != nil {
-            fmt.Println("Error reading from connection:", err)
-            return
-        }
-        fmt.Println("Received Message:", message)
+	// Keep the connection open to read messages
+	for {
+		message, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Println("Error reading from connection:", err)
+			node.RemoveConnection(conn.RemoteAddr().String())
+			return
+		}
+		fmt.Println("Received Message:", message)
 
-        err = ProcessMessage(message, chain)
+		err = ProcessMessage(message, chain)
 		if err != nil {
 			fmt.Println("Error processing message:", err)
 			return
 		}
-    }
+	}
 }
 
 func (node *Node) ConnectToPeer(address string, chain *Blockchain) {
@@ -147,12 +148,39 @@ func (node *Node) ConnectToPeer(address string, chain *Blockchain) {
 	conn.Write([]byte(node.Address + "\n"))
 	fmt.Println("Sent address:", node.Address)
 
-	node.Mutex.Lock()
-	node.Connections[address] = conn
-	node.Mutex.Unlock()
+	node.AddConnection(address, conn)
 	fmt.Println("Connected to peer:", address)
 
 	go node.ReadData(conn, chain)
+}
+
+func (node *Node) AddConnection(peerAddress string, conn net.Conn) {
+	node.Mutex.Lock()
+	defer node.Mutex.Unlock()
+
+	node.Connections[peerAddress] = conn
+	fmt.Println("Connection added:", peerAddress)
+}
+
+func (node *Node) RemoveConnection(peerAddress string) {
+	node.Mutex.Lock()
+	defer node.Mutex.Unlock()
+
+	if conn, ok := node.Connections[peerAddress]; ok {
+		conn.Close()
+		delete(node.Connections, peerAddress)
+		fmt.Println("Connection removed:", peerAddress)
+	} else {
+		fmt.Println("No connection found for:", peerAddress)
+	}
+
+	for i, peer := range node.Peers {
+		if peer == peerAddress {
+			node.Peers = append(node.Peers[:i], node.Peers[i+1:]...)
+			fmt.Println("Peer removed from list:", peerAddress)
+			break
+		}
+	}
 }
 
 func (node *Node) ReadData(conn net.Conn, chain *Blockchain) {
@@ -161,6 +189,7 @@ func (node *Node) ReadData(conn net.Conn, chain *Blockchain) {
 		message, err := reader.ReadString('\n')
 		if err != nil {
 			fmt.Println("Error reading from connection:", err)
+			node.RemoveConnection(conn.RemoteAddr().String())
 			return
 		}
 		fmt.Println("Received in ReadData:", message)

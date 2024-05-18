@@ -12,11 +12,6 @@ import (
 )
 
 func main() {
-	w := new(Wallet)
-	w.KeyGen()
-	fmt.Println("Public key:", w.publicKey)
-	fmt.Println("Private key:", w.privateKey)
-
 	chain := InitBlockchain(5, 5, 5)
 
 	listenAddress := flag.String("address", "localhost:8080", "Address to listen on")
@@ -57,7 +52,7 @@ func main() {
 				block := Block{
 					Transactions: nil,
 					Timestamp:    time.Now().Unix(),
-					Capacity:    5,
+					Capacity:     5,
 					PreviousHash: "previousHash",
 				}
 				node.BroadcastBlock(block)
@@ -130,7 +125,7 @@ func test() {
 
 	fmt.Println("Balance of 0x123 after mining:", chain.GetBalance("0x123"))
 	fmt.Print("\n\n")
-	
+
 	fmt.Println("Length of pending transactions after mining:", len(chain.PendingTransactions))
 	fmt.Print("\n\n")
 
