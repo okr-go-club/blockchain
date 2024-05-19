@@ -301,14 +301,14 @@ func (chain *Blockchain) MinePendingTransactions(minerAddress string) {
 	chain.AddBlock(block)
 }
 
-func InitBlockchain(difficulty, maxBlockSize int, miningReward float64) Blockchain {
+func InitBlockchain(difficulty, maxBlockSize int, miningReward float64) *Blockchain {
 	blockchain := Blockchain{Difficulty: difficulty, MaxBlockSize: maxBlockSize, MiningReward: miningReward}
 	genesisBlock := Block{
 		Timestamp: time.Now().Unix(),
 	}
 	genesisBlock.MineBlock(blockchain.Difficulty)
 	blockchain.AddBlock(genesisBlock)
-	return blockchain
+	return &blockchain
 }
 
 type Wallet struct {

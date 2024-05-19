@@ -20,11 +20,11 @@ func main() {
 
 	node := NewNode(*listenAddress, strings.Split(*peers, ","))
 
-	go node.StartServer(&chain)
+	go node.StartServer(chain)
 
 	for _, peer := range node.Peers {
 		if peer != "" {
-			go node.ConnectToPeer(peer, &chain)
+			go node.ConnectToPeer(peer, chain)
 		}
 	}
 
