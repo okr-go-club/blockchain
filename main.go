@@ -65,6 +65,7 @@ func main() {
 	select {}
 }
 
+//nolint:all
 func test() {
 	w := new(Wallet)
 	w.KeyGen()
