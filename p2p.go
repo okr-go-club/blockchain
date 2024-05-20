@@ -113,7 +113,12 @@ func (node *Node) HandleConnection(conn net.Conn, chain *Blockchain) {
 
 	// Notify the peer about itself
 	selfMessage := "PEER:" + node.Address + "\n"
-	conn.Write([]byte(selfMessage))
+	_, err = conn.Write([]byte(selfMessage))
+	if err != nil {
+		fmt.Println("Error writing to connection:", err)
+		node.RemoveConnection(conn.RemoteAddr().String())
+		return
+	}
 	fmt.Println("Notified peer about self:", selfMessage)
 
 	// Keep the connection open to read messages
@@ -142,10 +147,20 @@ func (node *Node) ConnectToPeer(address string, chain *Blockchain) {
 	}
 
 	message := "Hello, Blockchain!\n"
-	conn.Write([]byte(message))
+	_, err = conn.Write([]byte(message))
+	if err != nil {
+		fmt.Println("Error writing to connection:", err)
+		node.RemoveConnection(conn.RemoteAddr().String())
+		return
+	}
 	fmt.Println("Sent:", message)
 
-	conn.Write([]byte(node.Address + "\n"))
+	_, err = conn.Write([]byte(node.Address + "\n"))
+	if err != nil {
+		fmt.Println("Error writing to connection:", err)
+		node.RemoveConnection(conn.RemoteAddr().String())
+		return
+	}
 	fmt.Println("Sent address:", node.Address)
 
 	node.AddConnection(address, conn)
@@ -193,7 +208,11 @@ func (node *Node) ReadData(conn net.Conn, chain *Blockchain) {
 			return
 		}
 		fmt.Println("Received in ReadData:", message)
-		ProcessMessage(message, chain)
+		err = ProcessMessage(message, chain)
+		if err != nil {
+			fmt.Println("Error processing message:", err)
+			return
+		}
 	}
 }
 
