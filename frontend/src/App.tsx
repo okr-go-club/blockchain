@@ -1,7 +1,8 @@
 import React from 'react';
+
 import Container from './Container';
 import Block from './Block';
-import Transaction from './Transaction';
+import Table from './Table';
 
 const transactions = [
   {
@@ -88,24 +89,24 @@ const blocks = [
 ];
 
 export default function App() {
+  const columns = [
+    { name: 'From', key: 'fromAddress', isNumeric: false },
+    { name: 'To', key: 'toAddress', isNumeric: false },
+    { name: 'Amount', key: 'amount', isNumeric: true },
+    { name: 'Date & Time', key: 'timestamp', isNumeric: false },
+    { name: 'ID', key: 'transactionId', isNumeric: false },
+    { name: 'IsValid', key: 'isSignValid', isNumeric: false },
+  ]
+
+  const prettyTransactions = transactions.map(tx => ({
+    ...tx,
+    isSignValid: tx.isSignValid ? '✅' : '❌',
+    timestamp: new Date(tx.timestamp * 1000).toLocaleString(),
+  }));
+
   return (
     <div style={styles.container}>
       <div style={styles.sideBySideContainer}>
-        <div style={styles.innerContainer}>
-          <Container title="Pending Transactions">
-            {transactions.map((tx, index) => (
-              <Transaction
-                key={index}
-                fromAddress={tx.fromAddress}
-                toAddress={tx.toAddress}
-                amount={tx.amount}
-                timestamp={tx.timestamp}
-                transactionId={tx.transactionId}
-                isSignValid={tx.isSignValid}
-              />
-            ))}
-          </Container>
-        </div>
         <div style={styles.innerContainer}>
           <Container title="Blockchain">
             {blocks.map((block, index) => (
@@ -120,6 +121,11 @@ export default function App() {
               />
             ))}
           </Container>
+          <Table
+            caption={"Transaction Pool"}
+            columns={columns}
+            rows={prettyTransactions}
+          />
         </div>
       </div>
     </div>
