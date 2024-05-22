@@ -1,6 +1,6 @@
 import React from 'react';
 
-interface TransactionProps {
+export interface TransactionProps {
   fromAddress: string;
   toAddress: string;
   amount: number;
@@ -9,7 +9,14 @@ interface TransactionProps {
   isSignValid: boolean;
 }
 
-const Transaction: React.FC<TransactionProps> = ({ fromAddress, toAddress, amount, timestamp, transactionId, isSignValid }) => {
+export default function Transaction({
+  fromAddress,
+  toAddress,
+  amount,
+  timestamp,
+  transactionId,
+  isSignValid,
+}: TransactionProps) {
   const date = new Date(timestamp * 1000).toLocaleString();
 
   return (
@@ -33,5 +40,3 @@ const styles = {
     backgroundColor: '#fff',
   } as React.CSSProperties,
 };
-
-export default Transaction;

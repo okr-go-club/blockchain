@@ -1,14 +1,5 @@
 import React, { useState } from 'react';
-import Transaction from './Transaction';
-
-interface TransactionProps {
-  fromAddress: string;
-  toAddress: string;
-  amount: number;
-  timestamp: number;
-  transactionId: string;
-  signature: string;
-}
+import Transaction, { TransactionProps } from './Transaction';
 
 interface BlockProps {
   transactions: TransactionProps[];
@@ -19,11 +10,11 @@ interface BlockProps {
   capacity: number;
 }
 
-const Block: React.FC<BlockProps> = ({ transactions, timestamp, previousHash, nonce, hash, capacity }) => {
+export default function Block({ transactions, timestamp, previousHash, nonce, hash, capacity }: BlockProps) {
   const [showTransactions, setShowTransactions] = useState(false);
   const date = new Date(timestamp * 1000).toLocaleString();
 
-  const toggleTransactions = () => {
+  const toggleShowTransactions = () => {
     setShowTransactions(!showTransactions);
   };
 
@@ -34,7 +25,7 @@ const Block: React.FC<BlockProps> = ({ transactions, timestamp, previousHash, no
       <p><strong>Nonce:</strong> {nonce}</p>
       <p><strong>Hash:</strong> {hash}</p>
       <p><strong>Capacity:</strong> {capacity}</p>
-      <button onClick={toggleTransactions}>
+      <button onClick={toggleShowTransactions}>
         {showTransactions ? 'Hide Transactions' : 'Show Transactions'}
       </button>
       {showTransactions && (
@@ -68,5 +59,3 @@ const styles = {
     marginTop: '10px',
   } as React.CSSProperties,
 };
-
-export default Block;

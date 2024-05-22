@@ -39,7 +39,8 @@ const blocks = [
         amount: 50.75,
         timestamp: 1622547600,
         transactionId: "b6f1c4e6-9d7e-11eb-a8b3-0242ac130003",
-        signature: "MEUCIQDfZ5x/o/lpZG0mth8xOgzm+KtJZ7ByaHgGJk1N/7jEswIgYDl/0/Z+gYksy20Kr0bF3xMCWYZIo0++Boq/bCds0Lo="
+        signature: "MEUCIQDfZ5x/o/lpZG0mth8xOgzm+KtJZ7ByaHgGJk1N/7jEswIgYDl/0/Z+gYksy20Kr0bF3xMCWYZIo0++Boq/bCds0Lo=",
+        isSignValid: true,
       },
       {
         fromAddress: "publicKeyFromAddress2",
@@ -47,7 +48,8 @@ const blocks = [
         amount: 20.00,
         timestamp: 1622547601,
         transactionId: "b6f1c7e0-9d7e-11eb-a8b3-0242ac130003",
-        signature: "MEQCIFG/6gPY1wvMibF8Ys4/4TR6bPy43DXZjox0xslPBozVAiAhOk0sqw9hf3Ijz/jL/vXTbb/bvc4peh4MnMTrdbO9kg=="
+        signature: "MEQCIFG/6gPY1wvMibF8Ys4/4TR6bPy43DXZjox0xslPBozVAiAhOk0sqw9hf3Ijz/jL/vXTbb/bvc4peh4MnMTrdbO9kg==",
+        isSignValid: true,
       }
     ],
     timestamp: 1622547602,
@@ -64,7 +66,8 @@ const blocks = [
         amount: 30.50,
         timestamp: 1622548600,
         transactionId: "a6f1c4e6-9d7e-11eb-a8b3-0242ac130003",
-        signature: "MEUCIQD4Yt6X5Ov1WxE5/8d5Z5B3b6d7c5e8f9a8b9c7d8e9f0a1AiEA7h1L7g8d5e8f9a8b9c7d8e9f0a1a1b2c3d4e5f6g7h8="
+        signature: "MEUCIQD4Yt6X5Ov1WxE5/8d5Z5B3b6d7c5e8f9a8b9c7d8e9f0a1AiEA7h1L7g8d5e8f9a8b9c7d8e9f0a1a1b2c3d4e5f6g7h8=",
+        isSignValid: true,
       },
       {
         fromAddress: "publicKeyFromAddress4",
@@ -72,7 +75,8 @@ const blocks = [
         amount: 45.00,
         timestamp: 1622548601,
         transactionId: "a6f1c7e0-9d7e-11eb-a8b3-0242ac130003",
-        signature: "MEQCID1/6gPY1wvMibF8Ys4/4TR6bPy43DXZjox0xslPBozVAiAhOk0sqw9hf3Ijz/jL/vXTbb/bvc4peh4MnMTrdbO9kg=="
+        signature: "MEQCID1/6gPY1wvMibF8Ys4/4TR6bPy43DXZjox0xslPBozVAiAhOk0sqw9hf3Ijz/jL/vXTbb/bvc4peh4MnMTrdbO9kg==",
+        isSignValid: true,
       }
     ],
     timestamp: 1622548602,
@@ -83,7 +87,7 @@ const blocks = [
   }
 ];
 
-const App: React.FC = () => {
+export default function App() {
   return (
     <div style={styles.container}>
       <div style={styles.sideBySideContainer}>
@@ -136,5 +140,3 @@ const styles = {
     margin: '0 10px',
   } as React.CSSProperties,
 };
-
-export default App;
