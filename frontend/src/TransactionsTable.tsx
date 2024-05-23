@@ -10,29 +10,44 @@ import {
     Text,
 } from '@chakra-ui/react'
 
+import { TransactionProps } from './Transaction';
+
+export interface TableProps {
+    transactions: TransactionProps[];
+}
+
 interface Column {
     name: string;
-    key: string;
+    key: keyof TransactionProps;
     isNumeric: boolean;
 }
 
-interface Row {
-    [key: string]: any;
+function prettifyTransactions(transactions: TransactionProps[]) {
+    return transactions.map(tx => ({
+      ...tx,
+      isSignValid: tx.isSignValid ? '✅' : '❌',
+      timestamp: new Date(tx.timestamp * 1000).toLocaleString(),
+    }));
 }
 
-export interface TableProps {
-    caption: string;
-    columns: Column[];
-    rows: Row[];
-}
+export default function TransactionsTable({ transactions }: TableProps) {
+    const columns: Column[] = [
+        { name: 'From', key: 'fromAddress', isNumeric: false },
+        { name: 'To', key: 'toAddress', isNumeric: false },
+        { name: 'Amount', key: 'amount', isNumeric: true },
+        { name: 'Date & Time', key: 'timestamp', isNumeric: false },
+        { name: 'ID', key: 'transactionId', isNumeric: false },
+        { name: 'IsValid', key: 'isSignValid', isNumeric: false },
+    ]
 
-export default function Table({ caption, columns, rows }: TableProps) {
+    const rows = prettifyTransactions(transactions);
+
     return (
         <TableContainer>
             <ChakraTable variant='simple' size='lg'>
                 <TableCaption placement='top'>
                     <Text textAlign={[ 'left' ]} fontSize='1.6em'>
-                        {caption}
+                        Transaction Pool
                     </Text>
                 </TableCaption>
                 <Thead>

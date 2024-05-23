@@ -1,8 +1,10 @@
 import React from 'react';
+import { Button } from '@chakra-ui/react';
 
 import Container from './Container';
 import Block from './Block';
-import Table from './Table';
+import TransactionsTable from './TransactionsTable';
+import { TransactionProps } from './Transaction';
 
 const transactions = [
   {
@@ -89,19 +91,19 @@ const blocks = [
 ];
 
 export default function App() {
-  const columns = [
-    { name: 'From', key: 'fromAddress', isNumeric: false },
-    { name: 'To', key: 'toAddress', isNumeric: false },
-    { name: 'Amount', key: 'amount', isNumeric: true },
-    { name: 'Date & Time', key: 'timestamp', isNumeric: false },
-    { name: 'ID', key: 'transactionId', isNumeric: false },
-    { name: 'IsValid', key: 'isSignValid', isNumeric: false },
+  const blockColumns = [
+    { name: 'Timestamp', key: 'timestamp', isNumeric: false },
+    { name: 'Previous Hash', key: 'previousHash', isNumeric: false },
+    { name: 'Nonce', key: 'nonce', isNumeric: true },
+    { name: 'Hash', key: 'hash', isNumeric: false },
+    { name: 'Capacity', key: 'capacity', isNumeric: true },
+    { name: 'Transactions', key: 'transactions', isNumeric: false },
   ]
 
-  const prettyTransactions = transactions.map(tx => ({
-    ...tx,
-    isSignValid: tx.isSignValid ? '✅' : '❌',
-    timestamp: new Date(tx.timestamp * 1000).toLocaleString(),
+  const prettyBlocks = blocks.map(block => ({
+    ...block,
+    transactions: <Button colorScheme='blue'>Show Transactions</Button>,
+    timestamp: new Date(block.timestamp * 1000).toLocaleString(),
   }));
 
   return (
@@ -121,10 +123,13 @@ export default function App() {
               />
             ))}
           </Container>
-          <Table
-            caption={"Transaction Pool"}
-            columns={columns}
-            rows={prettyTransactions}
+          {/* <Table
+            caption={"Blockchain"}
+            columns={blockColumns}
+            rows={prettyBlocks}
+          /> */}
+          <TransactionsTable
+            transactions={transactions}
           />
         </div>
       </div>
