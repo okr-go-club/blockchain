@@ -1,10 +1,9 @@
 import React from 'react';
-import { Button } from '@chakra-ui/react';
 
 import Container from './Container';
 import Block from './Block';
 import TransactionsTable from './TransactionsTable';
-import { TransactionProps } from './Transaction';
+import BlocksTable from './BlocksTable';
 
 const transactions = [
   {
@@ -91,49 +90,15 @@ const blocks = [
 ];
 
 export default function App() {
-  const blockColumns = [
-    { name: 'Timestamp', key: 'timestamp', isNumeric: false },
-    { name: 'Previous Hash', key: 'previousHash', isNumeric: false },
-    { name: 'Nonce', key: 'nonce', isNumeric: true },
-    { name: 'Hash', key: 'hash', isNumeric: false },
-    { name: 'Capacity', key: 'capacity', isNumeric: true },
-    { name: 'Transactions', key: 'transactions', isNumeric: false },
-  ]
-
-  const prettyBlocks = blocks.map(block => ({
-    ...block,
-    transactions: <Button colorScheme='blue'>Show Transactions</Button>,
-    timestamp: new Date(block.timestamp * 1000).toLocaleString(),
-  }));
-
   return (
-    <div style={styles.container}>
-      <div style={styles.sideBySideContainer}>
-        <div style={styles.innerContainer}>
-          <Container title="Blockchain">
-            {blocks.map((block, index) => (
-              <Block
-                key={index}
-                transactions={block.transactions}
-                timestamp={block.timestamp}
-                previousHash={block.previousHash}
-                nonce={block.nonce}
-                hash={block.hash}
-                capacity={block.capacity}
-              />
-            ))}
-          </Container>
-          {/* <Table
-            caption={"Blockchain"}
-            columns={blockColumns}
-            rows={prettyBlocks}
-          /> */}
-          <TransactionsTable
-            transactions={transactions}
-          />
-        </div>
-      </div>
-    </div>
+    <>
+      <BlocksTable
+        blocks={blocks}
+      />
+      <TransactionsTable
+        transactions={transactions}
+      />
+    </>
   );
 };
 

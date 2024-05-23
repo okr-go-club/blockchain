@@ -1,4 +1,5 @@
 import {
+    Button,
     Table as ChakraTable,
     Thead,
     Tbody,
@@ -10,39 +11,40 @@ import {
     Text,
 } from '@chakra-ui/react'
 
-import { TransactionProps } from './Transaction';
+import { BlockProps } from './Block';
 
 interface TableProps {
-    transactions: TransactionProps[];
+    blocks: BlockProps[];
 }
 
 interface Column {
     name: string;
-    key: keyof TransactionProps;
+    key: keyof BlockProps;
     isNumeric: boolean;
 }
 
-export default function TransactionsTable({ transactions }: TableProps) {
+export default function BlocksTable({ blocks }: TableProps) {
     const columns: Column[] = [
-        { name: 'ID', key: 'transactionId', isNumeric: false },
-        { name: 'From', key: 'fromAddress', isNumeric: false },
-        { name: 'To', key: 'toAddress', isNumeric: false },
-        { name: 'Amount', key: 'amount', isNumeric: true },
-        { name: 'Date & Time', key: 'timestamp', isNumeric: false },
-        { name: 'IsValid', key: 'isSignValid', isNumeric: false },
-    ]
-    const rows = transactions.map(tx => ({
-        ...tx,
-        isSignValid: tx.isSignValid ? '✅' : '❌',
-        timestamp: new Date(tx.timestamp * 1000).toLocaleString(),
-    }));
+        { name: 'Timestamp', key: 'timestamp', isNumeric: false },
+        { name: 'Previous Hash', key: 'previousHash', isNumeric: false },
+        { name: 'Nonce', key: 'nonce', isNumeric: true },
+        { name: 'Hash', key: 'hash', isNumeric: false },
+        { name: 'Capacity', key: 'capacity', isNumeric: true },
+        { name: 'Transactions', key: 'transactions', isNumeric: false },
+      ]
+
+    const rows = blocks.map(block => ({
+        ...block,
+        transactions: <Button colorScheme='blue'>Show Transactions</Button>,
+        timestamp: new Date(block.timestamp * 1000).toLocaleString(),
+      }));
 
     return (
         <TableContainer>
             <ChakraTable variant='simple' size='lg'>
                 <TableCaption placement='top'>
                     <Text textAlign={[ 'left' ]} fontSize='1.6em'>
-                        Transaction Pool
+                        Blockchain
                     </Text>
                 </TableCaption>
                 <Thead>

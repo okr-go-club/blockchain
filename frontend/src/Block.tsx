@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Transaction, { TransactionProps } from './Transaction';
 
-interface BlockProps {
+export interface BlockProps {
   transactions: TransactionProps[];
   timestamp: number;
   previousHash: string;
