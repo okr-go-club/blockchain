@@ -12,7 +12,7 @@ import {
 
 import { TransactionProps } from './Transaction';
 
-interface TableProps {
+export interface TransactionsTableProps {
     transactions: TransactionProps[];
 }
 
@@ -22,7 +22,7 @@ interface Column {
     isNumeric: boolean;
 }
 
-export default function TransactionsTable({ transactions }: TableProps) {
+export default function TransactionsTable({ transactions }: TransactionsTableProps) {
     const columns: Column[] = [
         { name: 'ID', key: 'transactionId', isNumeric: false },
         { name: 'From', key: 'fromAddress', isNumeric: false },

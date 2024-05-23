@@ -1,5 +1,4 @@
 import {
-    Button,
     Table as ChakraTable,
     Thead,
     Tbody,
@@ -11,7 +10,18 @@ import {
     Text,
 } from '@chakra-ui/react'
 
-import { BlockProps } from './Block';
+import { TransactionProps } from './Transaction';
+import TransactionsModalButton from './TransactionsModalButton';
+
+interface BlockProps {
+    timestamp: number;
+    previousHash: string;
+    nonce: number;
+    hash: string;
+    capacity: number;
+    transactions: TransactionProps[];
+
+}
 
 interface TableProps {
     blocks: BlockProps[];
@@ -31,19 +41,18 @@ export default function BlocksTable({ blocks }: TableProps) {
         { name: 'Hash', key: 'hash', isNumeric: false },
         { name: 'Capacity', key: 'capacity', isNumeric: true },
         { name: 'Transactions', key: 'transactions', isNumeric: false },
-      ]
+    ]
 
     const rows = blocks.map(block => ({
         ...block,
-        transactions: <Button colorScheme='blue'>Show Transactions</Button>,
         timestamp: new Date(block.timestamp * 1000).toLocaleString(),
-      }));
+    }));
 
     return (
         <TableContainer>
             <ChakraTable variant='simple' size='lg'>
                 <TableCaption placement='top'>
-                    <Text textAlign={[ 'left' ]} fontSize='1.6em'>
+                    <Text textAlign={['left']} fontSize='1.6em'>
                         Blockchain
                     </Text>
                 </TableCaption>
@@ -61,7 +70,11 @@ export default function BlocksTable({ blocks }: TableProps) {
                         <Tr key={index}>
                             {columns.map((col, index) => (
                                 <Td key={index} isNumeric={col.isNumeric}>
-                                    {row[col.key]}
+                                    {
+                                        col.key == 'transactions'
+                                        ? <TransactionsModalButton transactions={row[col.key]} />
+                                        : row[col.key]
+                                    }
                                 </Td>
                             ))}
                         </Tr>

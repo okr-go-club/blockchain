@@ -1,7 +1,5 @@
 import React from 'react';
 
-import Container from './Container';
-import Block from './Block';
 import TransactionsTable from './TransactionsTable';
 import BlocksTable from './BlocksTable';
 
