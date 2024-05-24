@@ -17,12 +17,11 @@ export default function TransactionsModalButton({ transactions }: TransactionsTa
 
     return (
         <>
-            <Button onClick={onOpen}>Show Transactions</Button>
+            <Button size={'xs'} fontSize={14} onClick={onOpen}>Show Transactions</Button>
 
             <Modal isOpen={isOpen} onClose={onClose} size={'full'}>
                 <ModalOverlay />
                 <ModalContent>
-                    <ModalHeader>Transactions in the Block</ModalHeader>
                     <ModalCloseButton />
                     <ModalBody>
                         <TransactionsTable transactions={transactions} />

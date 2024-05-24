@@ -10,7 +10,14 @@ import {
     Text,
 } from '@chakra-ui/react'
 
-import { TransactionProps } from './Transaction';
+export interface TransactionProps {
+    fromAddress: string;
+    toAddress: string;
+    amount: number;
+    timestamp: number;
+    transactionId: string;
+    isSignValid: boolean;
+}
 
 export interface TransactionsTableProps {
     transactions: TransactionProps[];
@@ -39,9 +46,9 @@ export default function TransactionsTable({ transactions }: TransactionsTablePro
 
     return (
         <TableContainer>
-            <ChakraTable variant='simple' size='lg'>
+            <ChakraTable variant='striped' size='md'>
                 <TableCaption placement='top'>
-                    <Text textAlign={[ 'left' ]} fontSize='1.6em'>
+                    <Text textAlign={[ 'left' ]} fontSize='18px'>
                         Transaction Pool
                     </Text>
                 </TableCaption>

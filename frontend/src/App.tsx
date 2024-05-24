@@ -1,4 +1,4 @@
-import React from 'react';
+import { Grid, GridItem } from '@chakra-ui/react';
 
 import TransactionsTable from './TransactionsTable';
 import BlocksTable from './BlocksTable';
@@ -89,28 +89,13 @@ const blocks = [
 
 export default function App() {
   return (
-    <>
-      <BlocksTable
-        blocks={blocks}
-      />
-      <TransactionsTable
-        transactions={transactions}
-      />
-    </>
+    <Grid templateColumns="5vw 1fr 5vw" gap={4} templateRows="auto auto">
+      <GridItem colStart={2} colEnd={3}>
+        <BlocksTable blocks={blocks} />
+      </GridItem>
+      <GridItem colStart={2} colEnd={3}>
+        <TransactionsTable transactions={transactions} />
+      </GridItem>
+    </Grid>
   );
-};
-
-const styles = {
-  container: {
-    padding: '20px',
-    fontFamily: 'Arial, sans-serif',
-  } as React.CSSProperties,
-  sideBySideContainer: {
-    display: 'flex',
-    justifyContent: 'space-between',
-  } as React.CSSProperties,
-  innerContainer: {
-    flex: '1',
-    margin: '0 10px',
-  } as React.CSSProperties,
 };
