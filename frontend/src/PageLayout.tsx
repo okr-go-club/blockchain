@@ -7,7 +7,7 @@ interface PageLayoutProps {
 
 export default function PageLayout({ children }: PageLayoutProps) {
     return (
-        <Grid templateColumns="5vw 1fr 5vw" gap={4} templateRows="auto auto">
+        <Grid templateColumns="5vw 1fr 5vw" templateRows="auto auto">
             <GridItem colStart={2} colEnd={3}>
                 {children}
             </GridItem>

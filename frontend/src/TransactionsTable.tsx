@@ -46,7 +46,7 @@ export default function TransactionsTable({ transactions }: TransactionsTablePro
 
     return (
         <TableContainer>
-            <ChakraTable variant='striped' size='md'>
+            <ChakraTable variant='simple' size='md'>
                 <TableCaption placement='top'>
                     <Text textAlign={[ 'left' ]} fontSize='18px'>
                         Transaction Pool

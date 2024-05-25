@@ -62,7 +62,7 @@ export default function BlocksTable({ blocks }: BlocksTableProps) {
 
     return (
         <TableContainer>
-            <ChakraTable variant='striped' size='md'>
+            <ChakraTable variant='simple' size='md'>
                 <TableCaption placement='top'>
                     <Text textAlign={['left']} fontSize='18px'>
                         Blockchain

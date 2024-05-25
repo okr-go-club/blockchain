@@ -1,19 +1,18 @@
-import { Box, Flex, Link, Spacer, Text } from "@chakra-ui/react";
+import { Box, Flex, Link, Spacer, Image } from "@chakra-ui/react";
 import { Link as RouterLink } from "react-router-dom";
+import logo from './logo.png'
 
 export default function Navbar() {
   return (
-    <Box bg="teal.500" px={4} py={2}>
+    <Box px={'5vw'} py={4}>
       <Flex alignItems="center">
-        <Text fontSize="xl" fontWeight="bold" color="white">
-          MyApp
-        </Text>
+        <Image src={logo} alt="Logo" boxSize="50px" />
         <Spacer />
         <Flex gap={4}>
-          <Link as={RouterLink} to="/blocks" color="white">
+          <Link fontSize={'18px'} as={RouterLink} to="/blocks" color="white">
             Blocks
           </Link>
-          <Link as={RouterLink} to="/transactions" color="white">
+          <Link fontSize={'18px'} as={RouterLink} to="/transactions" color="white">
             Transactions
           </Link>
         </Flex>
