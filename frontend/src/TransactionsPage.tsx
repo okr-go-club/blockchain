@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react';
-import {
-    Flex, Box,
-    Spinner,
-} from '@chakra-ui/react';
+import {Flex, Box} from '@chakra-ui/react';
 import TransactionsTable, { TransactionProps } from './TransactionsTable';
 import AddTransactionsModalButton from './AddTransactionModalButton';
 import ErrorAlert from './ErrorAlert';
 import axios from 'axios';
+import CenteredSpinner from './CenteredSpinner';
 
 
 export default function TransactionsPage({ caption }: { caption: string }) {
@@ -37,20 +35,7 @@ export default function TransactionsPage({ caption }: { caption: string }) {
         <Box>
             {
                 loading
-                    ? (
-                        <Flex
-                            justifyContent="center"
-                            alignItems="center"
-                            height="100vh"
-                            width="100vw"
-                            position="fixed"
-                            top="0"
-                            left="0"
-                            zIndex="1000"
-                        >
-                            <Spinner size="xl" />
-                        </Flex>
-                    )
+                    ? <CenteredSpinner />
                     : error
                         ? <ErrorAlert message={error} />
                         :

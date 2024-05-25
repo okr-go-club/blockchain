@@ -14,14 +14,13 @@ import {
 import { TransactionProps } from './TransactionsTable';
 import TransactionsModalButton from './TransactionsModalButton';
 
-interface BlockProps {
+export interface BlockProps {
     timestamp: number;
     previousHash: string;
     nonce: number;
     hash: string;
     capacity: number;
     transactions: TransactionProps[];
-
 }
 
 export interface BlocksTableProps {

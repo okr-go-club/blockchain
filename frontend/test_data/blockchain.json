@@ -7,23 +7,20 @@
                     "toAddress": "publicKeyToAddress1",
                     "amount": 50.75,
                     "timestamp": 1622547600,
-                    "transactionId": "b6f1c4e6-9d7e-11eb-a8b3-0242ac130003",
-                    "signature": "MEUCIQDfZ5x/o/lpZG0mth8xOgzm+KtJZ7ByaHgGJk1N/7jEswIgYDl/0/Z+gYksy20Kr0bF3xMCWYZIo0++Boq/bCds0Lo="
+                    "transactionId": "b6f1c4e6-9d7e-11eb-a8b3-0242ac130003"
                 },
                 {
                     "fromAddress": "publicKeyFromAddress2",
                     "toAddress": "publicKeyToAddress2",
                     "amount": 20.00,
                     "timestamp": 1622547601,
-                    "transactionId": "b6f1c7e0-9d7e-11eb-a8b3-0242ac130003",
-                    "signature": "MEQCIFG/6gPY1wvMibF8Ys4/4TR6bPy43DXZjox0xslPBozVAiAhOk0sqw9hf3Ijz/jL/vXTbb/bvc4peh4MnMTrdbO9kg=="
+                    "transactionId": "b6f1c7e0-9d7e-11eb-a8b3-0242ac130003"
                 }
             ],
             "timestamp": 1622547602,
             "previousHash": "0000000000000000000769b3f9c3e8e1e5b4a5a3d6e7d8c9f8a8b9c7d8e9f0a1",
             "nonce": 23857,
-            "hash": "000000b872da10d9cc8c63cf08a9d06a78e8e1b0d6d7c3e9f8a8b9c7d8e9f0a1",
-            "capacity": 2
+            "hash": "000000b872da10d9cc8c63cf08a9d06a78e8e1b0d6d7c3e9f8a8b9c7d8e9f0a1"
         },
         {
             "transactions": [
@@ -32,23 +29,20 @@
                     "toAddress": "publicKeyToAddress3",
                     "amount": 30.50,
                     "timestamp": 1622548600,
-                    "transactionId": "a6f1c4e6-9d7e-11eb-a8b3-0242ac130003",
-                    "signature": "MEUCIQD4Yt6X5Ov1WxE5/8d5Z5B3b6d7c5e8f9a8b9c7d8e9f0a1AiEA7h1L7g8d5e8f9a8b9c7d8e9f0a1a1b2c3d4e5f6g7h8="
+                    "transactionId": "a6f1c4e6-9d7e-11eb-a8b3-0242ac130003"
                 },
                 {
                     "fromAddress": "publicKeyFromAddress4",
                     "toAddress": "publicKeyToAddress4",
                     "amount": 45.00,
                     "timestamp": 1622548601,
-                    "transactionId": "a6f1c7e0-9d7e-11eb-a8b3-0242ac130003",
-                    "signature": "MEQCID1/6gPY1wvMibF8Ys4/4TR6bPy43DXZjox0xslPBozVAiAhOk0sqw9hf3Ijz/jL/vXTbb/bvc4peh4MnMTrdbO9kg=="
+                    "transactionId": "a6f1c7e0-9d7e-11eb-a8b3-0242ac130003"
                 }
             ],
             "timestamp": 1622548602,
             "previousHash": "000000b872da10d9cc8c63cf08a9d06a78e8e1b0d6d7c3e9f8a8b9c7d8e9f0a1",
             "nonce": 32984,
-            "hash": "000000f682da10d9cc8c63cf08a9d06a78e8e1b0d6d7c3e9f8a8b9c7d8e9f0a2",
-            "capacity": 2
+            "hash": "000000f682da10d9cc8c63cf08a9d06a78e8e1b0d6d7c3e9f8a8b9c7d8e9f0a2"
         },
         {
             "transactions": [
@@ -57,23 +51,20 @@
                     "toAddress": "publicKeyToAddress5",
                     "amount": 60.75,
                     "timestamp": 1622549600,
-                    "transactionId": "c6f1c4e6-9d7e-11eb-a8b3-0242ac130003",
-                    "signature": "MEUCIQD9Yt6X5Ov1WxE5/8d5Z5B3b6d7c5e8f9a8b9c7d8e9f0a1AiEA8h1L7g8d5e8f9a8b9c7d8e9f0a1a1b2c3d4e5f6g7h8="
+                    "transactionId": "c6f1c4e6-9d7e-11eb-a8b3-0242ac130003"
                 },
                 {
                     "fromAddress": "publicKeyFromAddress6",
                     "toAddress": "publicKeyToAddress6",
                     "amount": 75.00,
                     "timestamp": 1622549601,
-                    "transactionId": "c6f1c7e0-9d7e-11eb-a8b3-0242ac130003",
-                    "signature": "MEQCID2/6gPY1wvMibF8Ys4/4TR6bPy43DXZjox0xslPBozVAiAhOk0sqw9hf3Ijz/jL/vXTbb/bvc4peh4MnMTrdbO9kg=="
+                    "transactionId": "c6f1c7e0-9d7e-11eb-a8b3-0242ac130003"
                 }
             ],
             "timestamp": 1622549602,
             "previousHash": "000000f682da10d9cc8c63cf08a9d06a78e8e1b0d6d7c3e9f8a8b9c7d8e9f0a2",
             "nonce": 49025,
-            "hash": "000000e372da10d9cc8c63cf08a9d06a78e8e1b0d6d7c3e9f8a8b9c7d8e9f0a3",
-            "capacity": 2
+            "hash": "000000e372da10d9cc8c63cf08a9d06a78e8e1b0d6d7c3e9f8a8b9c7d8e9f0a3"
         },
         {
             "transactions": [
@@ -82,52 +73,22 @@
                     "toAddress": "publicKeyToAddress7",
                     "amount": 80.25,
                     "timestamp": 1622550600,
-                    "transactionId": "d6f1c4e6-9d7e-11eb-a8b3-0242ac130003",
-                    "signature": "MEUCIQD4Zt6X5Ov1WxE5/8d5Z5B3b6d7c5e8f9a8b9c7d8e9f0a1AiEA9h1L7g8d5e8f9a8b9c7d8e9f0a1a1b2c3d4e5f6g7h8="
+                    "transactionId": "d6f1c4e6-9d7e-11eb-a8b3-0242ac130003"
                 },
                 {
                     "fromAddress": "publicKeyFromAddress8",
                     "toAddress": "publicKeyToAddress8",
                     "amount": 90.00,
                     "timestamp": 1622550601,
-                    "transactionId": "d6f1c7e0-9d7e-11eb-a8b3-0242ac130003",
-                    "signature": "MEQCID3/6gPY1wvMibF8Ys4/4TR6bPy43DXZjox0xslPBozVAiAhOk0sqw9hf3Ijz/jL/vXTbb/bvc4peh4MnMTrdbO9kg=="
+                    "transactionId": "d6f1c7e0-9d7e-11eb-a8b3-0242ac130003"
                 }
             ],
             "timestamp": 1622550602,
             "previousHash": "000000e372da10d9cc8c63cf08a9d06a78e8e1b0d6d7c3e9f8a8b9c7d8e9f0a3",
             "nonce": 59348,
-            "hash": "000000d972da10d9cc8c63cf08a9d06a78e8e1b0d6d7c3e9f8a8b9c7d8e9f0a4",
-            "capacity": 2
+            "hash": "000000d972da10d9cc8c63cf08a9d06a78e8e1b0d6d7c3e9f8a8b9c7d8e9f0a4"
         }
     ],
-    "pendingTransactions": [
-        {
-            "fromAddress": "publicKeyFromAddress9",
-            "toAddress": "publicKeyToAddress9",
-            "amount": 100.00,
-            "timestamp": 1622551600,
-            "transactionId": "e6f1c4e6-9d7e-11eb-a8b3-0242ac130003",
-            "signature": "MEUCIQD5Yt6X5Ov1WxE5/8d5Z5B3b6d7c5e8f9a8b9c7d8e9f0a1AiEA0h1L7g8d5e8f9a8b9c7d8e9f0a1a1b2c3d4e5f6g7h8="
-        },
-        {
-            "fromAddress": "publicKeyFromAddress10",
-            "toAddress": "publicKeyToAddress10",
-            "amount": 120.50,
-            "timestamp": 1622551601,
-            "transactionId": "e6f1c7e0-9d7e-11eb-a8b3-0242ac130003",
-            "signature": "MEQCID4/6gPY1wvMibF8Ys4/4TR6bPy43DXZjox0xslPBozVAiAhOk0sqw9hf3Ijz/jL/vXTbb/bvc4peh4MnMTrdbO9kg=="
-        },
-        {
-            "fromAddress": "publicKeyFromAddress11",
-            "toAddress": "publicKeyToAddress11",
-            "amount": 150.00,
-            "timestamp": 1622551602,
-            "transactionId": "e6f1c9e0-9d7e-11eb-a8b3-0242ac130003",
-            "signature": "MEQCID5/6gPY1wvMibF8Ys4/4TR6bPy43DXZjox0xslPBozVAiAhOk0sqw9hf3Ijz/jL/vXTbb/bvc4peh4MnMTrdbO9kg=="
-        }
-    ],
-    "difficulty": 4,
     "maxBlockSize": 2,
     "miningReward": 12.5
 }
