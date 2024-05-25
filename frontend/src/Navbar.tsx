@@ -7,8 +7,7 @@ export default function Navbar() {
     <Box px={'5vw'} py={4}>
       <Flex alignItems="center">
         <Image src={logo} alt="Logo" boxSize="50px" />
-        <Spacer />
-        <Flex gap={4}>
+        <Flex pl={'20px'} gap={4}>
           <Link fontSize={'18px'} as={RouterLink} to="/blocks" color="white">
             Blocks
           </Link>
