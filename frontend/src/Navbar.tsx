@@ -1,4 +1,4 @@
-import { Box, Flex, Link, Spacer, Image } from "@chakra-ui/react";
+import { Box, Flex, Link, Image } from "@chakra-ui/react";
 import { Link as RouterLink } from "react-router-dom";
 import logo from './logo.png'
 
