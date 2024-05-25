@@ -2,10 +2,10 @@ import PageLayout from './PageLayout';
 import TransactionsTable, { TransactionsTableProps } from './TransactionsTable';
 
 
-export default function BlocksPage({ transactions }: TransactionsTableProps) {
+export default function TransactionsPage({ caption, transactions }: TransactionsTableProps) {
     return (
         <PageLayout>
-            <TransactionsTable transactions={transactions} />
+            <TransactionsTable caption={caption} transactions={transactions} />
         </PageLayout>
     );
 };

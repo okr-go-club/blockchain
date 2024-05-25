@@ -12,7 +12,7 @@ import {
 
 import TransactionsTable, { TransactionsTableProps } from './TransactionsTable'
 
-export default function TransactionsModalButton({ transactions }: TransactionsTableProps) {
+export default function TransactionsModalButton({ caption, transactions }: TransactionsTableProps) {
     const { isOpen, onOpen, onClose } = useDisclosure()
 
     return (
@@ -24,7 +24,7 @@ export default function TransactionsModalButton({ transactions }: TransactionsTa
                 <ModalContent>
                     <ModalCloseButton />
                     <ModalBody>
-                        <TransactionsTable transactions={transactions} />
+                        <TransactionsTable caption={caption} transactions={transactions} />
                     </ModalBody>
 
                     <ModalFooter>

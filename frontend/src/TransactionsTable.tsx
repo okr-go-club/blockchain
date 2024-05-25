@@ -16,10 +16,10 @@ export interface TransactionProps {
     amount: number;
     timestamp: number;
     transactionId: string;
-    isSignValid: boolean;
 }
 
 export interface TransactionsTableProps {
+    caption: string;
     transactions: TransactionProps[];
 }
 
@@ -29,18 +29,16 @@ interface Column {
     isNumeric: boolean;
 }
 
-export default function TransactionsTable({ transactions }: TransactionsTableProps) {
+export default function TransactionsTable({ caption, transactions }: TransactionsTableProps) {
     const columns: Column[] = [
         { name: 'ID', key: 'transactionId', isNumeric: false },
         { name: 'From', key: 'fromAddress', isNumeric: false },
         { name: 'To', key: 'toAddress', isNumeric: false },
         { name: 'Amount', key: 'amount', isNumeric: true },
         { name: 'Date & Time', key: 'timestamp', isNumeric: false },
-        { name: 'IsValid', key: 'isSignValid', isNumeric: false },
     ]
     const rows = transactions.map(tx => ({
         ...tx,
-        isSignValid: tx.isSignValid ? '✅' : '❌',
         timestamp: new Date(tx.timestamp * 1000).toLocaleString(),
     }));
 
@@ -49,7 +47,7 @@ export default function TransactionsTable({ transactions }: TransactionsTablePro
             <ChakraTable variant='simple' size='md'>
                 <TableCaption placement='top'>
                     <Text textAlign={[ 'left' ]} fontSize='18px'>
-                        Transaction Pool
+                        { caption }
                     </Text>
                 </TableCaption>
                 <Thead>
