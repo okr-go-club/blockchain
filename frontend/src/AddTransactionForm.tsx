@@ -3,13 +3,13 @@ import {
     FormControl,
     FormLabel,
     Input,
+    Button,
+    Flex,
 } from '@chakra-ui/react'
-
-import PageLayout from './PageLayout'
 
 export default function AddTransactionForm() {
     return (
-        <Box>
+        <Box width={'100%'}>
             <FormControl id="from" isRequired>
                 <FormLabel>From</FormLabel>
                 <Input placeholder="Sender address" />
@@ -22,6 +22,9 @@ export default function AddTransactionForm() {
                 <FormLabel>Amount</FormLabel>
                 <Input placeholder="Amount" />
             </FormControl>
+            <Flex justifyContent={'flex-end'} mt={4}>
+                <Button>Send</Button>
+            </Flex>
         </Box>
     )
 }

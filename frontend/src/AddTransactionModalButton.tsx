@@ -1,9 +1,9 @@
 import {
+    Box,
     Button,
     Modal,
     ModalOverlay,
     ModalContent,
-    ModalHeader,
     ModalFooter,
     ModalBody,
     ModalCloseButton,
@@ -11,7 +11,6 @@ import {
 } from '@chakra-ui/react'
 
 import AddTransactionForm from './AddTransactionForm'
-import PageLayout from './PageLayout'
 
 export default function AddTransactionsModalButton() {
     const { isOpen, onOpen, onClose } = useDisclosure()
@@ -23,18 +22,27 @@ export default function AddTransactionsModalButton() {
             <Modal isOpen={isOpen} onClose={onClose} size={'full'}>
                 <ModalOverlay />
                 <ModalContent>
-                    <PageLayout>
-                        <ModalCloseButton />
-                        <ModalBody>
+                    <ModalCloseButton />
+                    <ModalBody>
+                        <Box
+                            display="flex"
+                            flexDirection="column"
+                            alignItems="center"
+                            justifyContent="center"
+                            paddingX="30vw"
+                            paddingTop="10vw"
+                            width="100%"
+                            height="100%"
+                        >
                             <AddTransactionForm />
-                        </ModalBody>
+                        </Box>
+                    </ModalBody>
 
-                        <ModalFooter>
-                            <Button colorScheme='blue' mr={3} onClick={onClose}>
-                                Close
-                            </Button>
-                        </ModalFooter>
-                    </PageLayout>
+                    <ModalFooter>
+                        <Button colorScheme='blue' mr={3} onClick={onClose}>
+                            Close
+                        </Button>
+                    </ModalFooter>
                 </ModalContent>
             </Modal>
         </>
