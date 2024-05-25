@@ -15,7 +15,6 @@ export default function App() {
           <Route path="/transactions" element={
             <TransactionsPage
               caption={'Transactions Pool'}
-              transactions={transactions}
             />
           }
           />
