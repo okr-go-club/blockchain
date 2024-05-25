@@ -34,7 +34,7 @@ export default function AddTransactionsModalButton() {
                             width="100%"
                             height="100%"
                         >
-                            <AddTransactionForm />
+                            <AddTransactionForm onSuccess={onClose} />
                         </Box>
                     </ModalBody>
 

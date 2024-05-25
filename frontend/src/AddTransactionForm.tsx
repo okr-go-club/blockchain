@@ -16,7 +16,7 @@ interface FormValues {
     amount: number
 }
 
-export default function AddTransactionForm() {
+export default function AddTransactionForm({ onSuccess }: { onSuccess: () => void}) {
     function validateString(value: string) {
         let error
         if (!value) {
@@ -47,6 +47,7 @@ export default function AddTransactionForm() {
                 setTimeout(() => {
                     alert(JSON.stringify(values, null, 2))
                     setSubmitting(false)
+                    onSuccess();
                 }, 1000)
             }}
         >
