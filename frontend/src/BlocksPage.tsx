@@ -4,8 +4,6 @@ import BlocksTable, { BlocksTableProps } from './BlocksTable';
 
 export default function BlocksPage({ blocks }: BlocksTableProps) {
     return (
-        <PageLayout>
-            <BlocksTable blocks={blocks} />
-        </PageLayout>
+        <BlocksTable blocks={blocks} />
     );
 };

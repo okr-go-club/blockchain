@@ -3,21 +3,22 @@ import {
     Modal,
     ModalOverlay,
     ModalContent,
+    ModalHeader,
     ModalFooter,
     ModalBody,
     ModalCloseButton,
     useDisclosure,
 } from '@chakra-ui/react'
 
-import TransactionsTable, { TransactionsTableProps } from './TransactionsTable'
+import AddTransactionForm from './AddTransactionForm'
 import PageLayout from './PageLayout'
 
-export default function TransactionsModalButton({ caption, transactions }: TransactionsTableProps) {
+export default function AddTransactionsModalButton() {
     const { isOpen, onOpen, onClose } = useDisclosure()
 
     return (
         <>
-            <Button size={'xs'} fontSize={14} onClick={onOpen}>Show Transactions</Button>
+            <Button onClick={onOpen}>Add Transaction</Button>
 
             <Modal isOpen={isOpen} onClose={onClose} size={'full'}>
                 <ModalOverlay />
@@ -25,7 +26,7 @@ export default function TransactionsModalButton({ caption, transactions }: Trans
                     <PageLayout>
                         <ModalCloseButton />
                         <ModalBody>
-                            <TransactionsTable caption={caption} transactions={transactions} />
+                            <AddTransactionForm />
                         </ModalBody>
 
                         <ModalFooter>

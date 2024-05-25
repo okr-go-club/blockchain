@@ -9,6 +9,7 @@ import {
     TableContainer,
     Text,
 } from '@chakra-ui/react'
+import PageLayout from './PageLayout';
 
 export interface TransactionProps {
     fromAddress: string;
@@ -46,8 +47,8 @@ export default function TransactionsTable({ caption, transactions }: Transaction
         <TableContainer>
             <ChakraTable variant='simple' size='md'>
                 <TableCaption placement='top'>
-                    <Text textAlign={[ 'left' ]} fontSize='18px'>
-                        { caption }
+                    <Text textAlign={['left']} fontSize='18px'>
+                        {caption}
                     </Text>
                 </TableCaption>
                 <Thead>

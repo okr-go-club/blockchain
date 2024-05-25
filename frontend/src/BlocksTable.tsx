@@ -46,7 +46,7 @@ export default function BlocksTable({ blocks }: BlocksTableProps) {
 
     function renderCellData(column: Column, row: BlockProps) {
         if (column.key === 'transactions') {
-            return <TransactionsModalButton caption={ 'Transactions' } transactions={row[column.key]} />;
+            return <TransactionsModalButton caption={'Transactions'} transactions={row[column.key]} />;
         } else if (column.key === 'hash' || column.key === 'previousHash') {
             return (
                 <Tooltip label={row[column.key]} aria-label={column.name}>
@@ -82,7 +82,7 @@ export default function BlocksTable({ blocks }: BlocksTableProps) {
                         <Tr key={index}>
                             {columns.map((col, index) => (
                                 <Td key={index} isNumeric={col.isNumeric}>
-                                    { renderCellData(col, row) }
+                                    {renderCellData(col, row)}
                                 </Td>
                             ))}
                         </Tr>

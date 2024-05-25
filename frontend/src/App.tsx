@@ -1,23 +1,26 @@
-import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 
 import Navbar from './Navbar';
 import TransactionsPage from './TransactionsPage';
 import BlocksPage from './BlocksPage';
+import PageLayout from './PageLayout';
 
 export default function App() {
   return (
     <Router>
-      <Navbar />
-      <Routes>
-        <Route path="/blocks" element={<BlocksPage blocks={blocks} />} />
-        <Route path="/transactions" element={
+      <PageLayout>
+        <Navbar />
+        <Routes>
+          <Route path="/blocks" element={<BlocksPage blocks={blocks} />} />
+          <Route path="/transactions" element={
             <TransactionsPage
               caption={'Transactions Pool'}
               transactions={transactions}
             />
           }
-        />
-      </Routes>
+          />
+        </Routes>
+      </ PageLayout>
     </Router>
   );
 };
