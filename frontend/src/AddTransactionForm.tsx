@@ -31,13 +31,15 @@ export default function AddTransactionForm() {
             error = 'Field is required'
         } else if (isNaN(Number(value))) {
             error = 'Field must be a number'
+        } else if (value <= 0) {
+            error = 'Value must be bigger than 0'
         }
         return error
     }
 
     return (
         <Formik
-            initialValues={{ privateKey: '', from: '', to: '', amount: 0 }}
+            initialValues={{ privateKey: '', from: '', to: '', amount: 0}}
             onSubmit={(
                 values: FormValues,
                 { setSubmitting }: FormikHelpers<FormValues>,
@@ -49,10 +51,11 @@ export default function AddTransactionForm() {
             }}
         >
             {(props: FormikProps<FormValues>) => (
+                <Box width={'100%'}>
                 <Form>
                     <Field name='privateKey' validate={validateString}>
                         {({ field, form }: FieldProps<string>) => (
-                            <FormControl isInvalid={!!(form.errors.privateKey && form.touched.privateKey)}>
+                            <FormControl mb={'10px'} isInvalid={!!(form.errors.privateKey && form.touched.privateKey)}>
                                 <FormLabel>Private Key</FormLabel>
                                 <Input {...field} placeholder="Signing key" />
                                 <FormErrorMessage>{form.errors.privateKey?.toString()}</FormErrorMessage>
@@ -61,7 +64,7 @@ export default function AddTransactionForm() {
                     </Field>
                     <Field name='from' validate={validateString}>
                         {({ field, form }: FieldProps<string>) => (
-                            <FormControl isInvalid={!!(form.errors.from && form.touched.from)}>
+                            <FormControl mb={'10px'} isInvalid={!!(form.errors.from && form.touched.from)}>
                                 <FormLabel>From</FormLabel>
                                 <Input {...field} placeholder="Sender address" />
                                 <FormErrorMessage>{form.errors.form?.toString()}</FormErrorMessage>
@@ -70,7 +73,7 @@ export default function AddTransactionForm() {
                     </Field>
                     <Field name='to' validate={validateString}>
                         {({ field, form }: FieldProps<string>) => (
-                            <FormControl isInvalid={!!(form.errors.to && form.touched.to)}>
+                            <FormControl mb={'10px'} isInvalid={!!(form.errors.to && form.touched.to)}>
                                 <FormLabel>To</FormLabel>
                                 <Input {...field} placeholder="Recipient" />
                                 <FormErrorMessage>{form.errors.to?.toString()}</FormErrorMessage>
@@ -79,7 +82,7 @@ export default function AddTransactionForm() {
                     </Field>
                     <Field name='amount' validate={validateNumber}>
                         {({ field, form }: FieldProps<string>) => (
-                            <FormControl isInvalid={!!(form.errors.amount && form.touched.amount)}>
+                            <FormControl mb={'10px'} isInvalid={!!(form.errors.amount && form.touched.amount)}>
                                 <FormLabel>Amount</FormLabel>
                                 <Input {...field} placeholder="Amount" />
                                 <FormErrorMessage>{form.errors.amount?.toString()}</FormErrorMessage>
@@ -95,6 +98,7 @@ export default function AddTransactionForm() {
                         </Button>
                     </Flex>
                 </Form>
+                </Box>
             )}
         </Formik>
     )
