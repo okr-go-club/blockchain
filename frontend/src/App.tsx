@@ -1,7 +1,18 @@
-import { Grid, GridItem } from '@chakra-ui/react';
+import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 
-import TransactionsTable from './TransactionsTable';
-import BlocksTable from './BlocksTable';
+import TransactionsPage from './TransactionsPage';
+import BlocksPage from './BlocksPage';
+
+export default function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/blocks" element={<BlocksPage blocks={blocks} />} />
+        <Route path="/transactions" element={<TransactionsPage transactions={transactions} />} />
+      </Routes>
+    </Router>
+  );
+};
 
 const transactions = [
   {
@@ -86,16 +97,3 @@ const blocks = [
     capacity: 2
   }
 ];
-
-export default function App() {
-  return (
-    <Grid templateColumns="5vw 1fr 5vw" gap={4} templateRows="auto auto">
-      <GridItem colStart={2} colEnd={3}>
-        <BlocksTable blocks={blocks} />
-      </GridItem>
-      <GridItem colStart={2} colEnd={3}>
-        <TransactionsTable transactions={transactions} />
-      </GridItem>
-    </Grid>
-  );
-};

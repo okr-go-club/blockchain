@@ -24,7 +24,7 @@ interface BlockProps {
 
 }
 
-interface TableProps {
+export interface BlocksTableProps {
     blocks: BlockProps[];
 }
 
@@ -34,7 +34,7 @@ interface Column {
     isNumeric: boolean;
 }
 
-export default function BlocksTable({ blocks }: TableProps) {
+export default function BlocksTable({ blocks }: BlocksTableProps) {
     const columns: Column[] = [
         { name: 'Timestamp', key: 'timestamp', isNumeric: false },
         { name: 'Previous Hash', key: 'previousHash', isNumeric: false },
