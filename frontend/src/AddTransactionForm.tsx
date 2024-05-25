@@ -10,6 +10,10 @@ import {
 export default function AddTransactionForm() {
     return (
         <Box width={'100%'}>
+            <FormControl id="privateKey" isRequired>
+                <FormLabel>Private Key</FormLabel>
+                <Input placeholder="Signing key" />
+            </FormControl>
             <FormControl id="from" isRequired>
                 <FormLabel>From</FormLabel>
                 <Input placeholder="Sender address" />
