@@ -9,7 +9,6 @@ import {
     TableContainer,
     Text,
 } from '@chakra-ui/react'
-import PageLayout from './PageLayout';
 
 export interface TransactionProps {
     fromAddress: string;
