@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
     Alert,
     AlertIcon,
@@ -20,6 +20,7 @@ import BlocksTable, { BlockProps } from './BlocksTable';
 import axios from 'axios';
 import CenteredSpinner from './CenteredSpinner';
 import ErrorAlert from './ErrorAlert';
+import { useQuery } from '@tanstack/react-query';
 
 interface Blockchain {
     blocks: BlockProps[];
@@ -36,35 +37,24 @@ interface MiningStatus {
     details: string
 }
 
+async function fetchBlockchain(url: string): Promise<Blockchain> {
+    return await axios.get(url).then((res) => res.data);
+}
+
 export default function BlocksPage() {
-    const [blockchain, setBlockchain] = useState<Blockchain | null>(null);
-    const [error, setError] = useState<string | null>(null);
-    const [loading, setLoading] = useState<boolean>(false);
+    const url = 'https://64f5f20e-b455-41f6-91b1-0c7ab25bff48.mock.pstmn.io/blockchain';
+    // const url = 'https://e1dda503-d396-4f49-baf6-cd9fe372dc95.mock.pstmn.io/blockchain';
+
+    const { isPending, error, data, refetch } = useQuery({
+        queryKey: ['blockchain', url],
+        queryFn: () => fetchBlockchain(url),
+    });
 
     const { isOpen, onOpen, onClose } = useDisclosure()
     function handleClose() {
         onClose()
-        fetchBlockchain()
+        refetch()
     }
-
-    async function fetchBlockchain() {
-        const url = 'https://64f5f20e-b455-41f6-91b1-0c7ab25bff48.mock.pstmn.io/blockchain';
-        // const url = 'https://e1dda503-d396-4f49-baf6-cd9fe372dc95.mock.pstmn.io/blockchain';
-        setLoading(true);
-        try {
-            const response = await axios.get<Blockchain>(url);
-            setBlockchain(response.data);
-        } catch (error) {
-            console.error(error);
-            setError('Error fetching blockchain!')
-        } finally {
-            setLoading(false);
-        }
-    }
-
-    useEffect(() => {
-        fetchBlockchain();
-    }, []);
 
     const [isMining, setIsMining] = useState<boolean>(false);
     const [miningError, setMiningError] = useState<string | null>(null);
@@ -116,16 +106,16 @@ export default function BlocksPage() {
     return (
         <Box>
             {
-                loading
+                isPending
                     ? <CenteredSpinner />
                     : error
-                        ? <ErrorAlert message={error} />
+                        ? <ErrorAlert message={error.toString()} />
                         :
                         <>
-                            <BlocksTable blocks={blockchain?.blocks || []} />
+                            <BlocksTable blocks={data.blocks} />
                             <Flex justifyContent={'space-between'} mt={4}>
-                                <Text as={'b'} fontSize={'1xl'}>Block Size: {blockchain?.blockSize}</Text>
-                                <Text as={'b'} fontSize={'1xl'}>Mining Reward: {blockchain?.miningReward}</Text>
+                                <Text as={'b'} fontSize={'1xl'}>Block Size: {data.blockSize}</Text>
+                                <Text as={'b'} fontSize={'1xl'}>Mining Reward: {data.miningReward}</Text>
                                 {
                                     isMining
                                         ?
