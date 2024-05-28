@@ -10,12 +10,7 @@ import {
   Flex,
   FormErrorMessage,
 } from "@chakra-ui/react";
-import {
-  Field,
-  Form,
-  Formik,
-  FieldProps,
-} from "formik";
+import { Field, Form, Formik, FieldProps } from "formik";
 import axios, { AxiosError } from "axios";
 import { useMutation } from "@tanstack/react-query";
 
@@ -28,7 +23,7 @@ interface FormValues {
 
 async function handleSubmit(values: FormValues) {
   const url =
-    "https://0db5481e-464d-4881-b4a6-d627a62660be.mock.pstmn.io/transactions";
+    "http://localhost:8080/transactions";
   try {
     return await axios.post(url, values, {
       headers: { "Content-Type": "application/json" },
@@ -46,7 +41,9 @@ async function handleSubmit(values: FormValues) {
           (axiosError.response.data as { details: string }).details
         );
       }
+      throw error;
     }
+    throw error;
   }
 }
 
@@ -71,8 +68,6 @@ export default function AddTransactionForm() {
     return error;
   }
 
-  const url =
-    "https://0db5481e-464d-4881-b4a6-d627a62660be.mock.pstmn.io/transactions";
   const { isPending, error, isSuccess, mutate } = useMutation({
     mutationFn: (values: FormValues) => handleSubmit(values),
   });

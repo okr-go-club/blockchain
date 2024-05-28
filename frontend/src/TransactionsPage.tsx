@@ -8,12 +8,11 @@ import ErrorAlert from "./ErrorAlert";
 import CenteredSpinner from "./CenteredSpinner";
 
 async function fetchTransactions(url: string): Promise<TransactionProps[]> {
-    return await axios.get(url).then((res) => res.data);
+  return await axios.get(url).then((res) => res.data);
 }
 
 export default function TransactionsPage({ caption }: { caption: string }) {
-  const url = "https://a5b00532-aa50-4792-9de0-834a9e550eff.mock.pstmn.io/transactions";
-  // const url = 'https://5a36e441-135d-4e1d-bd4b-410ad4e24cda.mock.pstmn.io/transactions';
+  const url = "http://localhost:8080/transactions";
 
   const { isPending, error, data } = useQuery({
     queryKey: ["transactions", url],

@@ -19,7 +19,6 @@ export interface BlockProps {
     previousHash: string;
     nonce: number;
     hash: string;
-    capacity: number;
     transactions: TransactionProps[];
 }
 
@@ -39,7 +38,6 @@ export default function BlocksTable({ blocks }: BlocksTableProps) {
         { name: 'Previous Hash', key: 'previousHash', isNumeric: false },
         { name: 'Nonce', key: 'nonce', isNumeric: true },
         { name: 'Hash', key: 'hash', isNumeric: false },
-        { name: 'Capacity', key: 'capacity', isNumeric: true },
         { name: 'Transactions', key: 'transactions', isNumeric: false },
     ]
 
