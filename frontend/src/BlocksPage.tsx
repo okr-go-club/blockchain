@@ -1,19 +1,10 @@
 import { useState } from "react";
 import {
-  Alert,
-  AlertIcon,
-  AlertTitle,
   Box,
   Flex,
   Button,
   Text,
   CircularProgress,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
   useDisclosure,
 } from "@chakra-ui/react";
 import BlocksTable, { BlockProps } from "./BlocksTable";
@@ -22,6 +13,7 @@ import ErrorAlert from "./ErrorAlert";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import axiosInstance from "./axiosConfig";
 import InformationModal from "./InformationModal";
+import MineBlockButton from "./MineBlockButton";
 
 interface Blockchain {
   blocks: BlockProps[];
@@ -124,38 +116,26 @@ export default function BlocksPage() {
     onOpen();
   }
 
+  if (isPending) return <CenteredSpinner />;
+  if (error) return <ErrorAlert message={error.toString()} />;
+
   return (
     <Box>
-      {isPending ? (
-        <CenteredSpinner />
-      ) : error ? (
-        <ErrorAlert message={error.toString()} />
-      ) : (
-        <>
-          <BlocksTable blocks={data.blocks} />
-          <Flex justifyContent={"space-between"} mt={4}>
-            <Text as={"b"} fontSize={"1xl"}>
-              Block Size: {data.blockSize}
-            </Text>
-            <Text as={"b"} fontSize={"1xl"}>
-              Mining Reward: {data.miningReward}
-            </Text>
-            {startMiningMutation.isPending || Boolean(processId) ? (
-              <Button>
-                Mining block...
-                <CircularProgress
-                  ml={"10px"}
-                  size={"20px"}
-                  isIndeterminate
-                  color="green.300"
-                />
-              </Button>
-            ) : (
-              <Button onClick={handleStartMining}>Mine block</Button>
-            )}
-          </Flex>
-        </>
-      )}
+      <>
+        <BlocksTable blocks={data.blocks} />
+        <Flex justifyContent={"space-between"} mt={4}>
+          <Text as={"b"} fontSize={"1xl"}>
+            Block Size: {data.blockSize}
+          </Text>
+          <Text as={"b"} fontSize={"1xl"}>
+            Mining Reward: {data.miningReward}
+          </Text>
+          <MineBlockButton
+            isPending={startMiningMutation.isPending || Boolean(processId)}
+            onClick={handleStartMining}
+          />
+        </Flex>
+      </>
       <InformationModal
         message={modalMessage || ""}
         status={isMiningSuccess ? "success" : "error"}
