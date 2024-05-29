@@ -21,6 +21,7 @@ import CenteredSpinner from "./CenteredSpinner";
 import ErrorAlert from "./ErrorAlert";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import axiosInstance from "./axiosConfig";
+import InformationModal from "./InformationModal";
 
 interface Blockchain {
   blocks: BlockProps[];
@@ -28,8 +29,8 @@ interface Blockchain {
   miningReward: number;
 }
 
-async function fetchBlockchain(endpoint: string): Promise<Blockchain> {
-  return await axiosInstance.get(endpoint).then((res) => res.data);
+async function fetchBlockchain(): Promise<Blockchain> {
+  return await axiosInstance.get("/blockchain").then((res) => res.data);
 }
 
 interface StartMiningResponse {
@@ -42,7 +43,7 @@ interface MiningStatusResponse {
 }
 
 async function startMiningProcess(): Promise<StartMiningResponse> {
-  const response = await axiosInstance.post('/blockchain/mine');
+  const response = await axiosInstance.post("/blockchain/mine");
   return response.data;
 }
 
@@ -53,7 +54,9 @@ function useStartMiningProcess() {
 async function fetchMiningStatus(
   processId: string
 ): Promise<MiningStatusResponse> {
-  const response = await axiosInstance.get(`/blockchain/mine/${processId}/status`);
+  const response = await axiosInstance.get(
+    `/blockchain/mine/${processId}/status`
+  );
   console.log(response.data);
   return response.data;
 }
@@ -72,7 +75,7 @@ function useMiningStatus(processId: string, enabled: boolean) {
 export default function BlocksPage() {
   const { isPending, error, data, refetch } = useQuery({
     queryKey: ["blockchain"],
-    queryFn: () => fetchBlockchain('/blockchain'),
+    queryFn: fetchBlockchain,
   });
 
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -153,45 +156,12 @@ export default function BlocksPage() {
           </Flex>
         </>
       )}
-      <Modal isOpen={isOpen} onClose={handleClose} size={"full"}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalCloseButton />
-          <ModalBody>
-            <Box
-              display="flex"
-              flexDirection="column"
-              alignItems="center"
-              justifyContent="center"
-              paddingX="30vw"
-              paddingTop="10vw"
-              width="100%"
-              height="100%"
-            >
-              <Alert
-                status={isMiningSuccess ? "success" : "error"}
-                variant="subtle"
-                flexDirection="column"
-                alignItems="center"
-                justifyContent="center"
-                textAlign="center"
-                height="200px"
-                borderRadius={"20px"}
-              >
-                <AlertIcon boxSize="40px" mr={0} />
-                <AlertTitle mt={4} mb={1} fontSize="lg">
-                  {modalMessage}
-                </AlertTitle>
-              </Alert>
-            </Box>
-          </ModalBody>
-          <ModalFooter>
-            <Button colorScheme="blue" mr={3} onClick={handleClose}>
-              Close
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <InformationModal
+        message={modalMessage || ""}
+        status={isMiningSuccess ? "success" : "error"}
+        isOpen={isOpen}
+        onClose={handleClose}
+      />
     </Box>
   );
 }
