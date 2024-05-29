@@ -11,8 +11,9 @@ import {
   FormErrorMessage,
 } from "@chakra-ui/react";
 import { Field, Form, Formik, FieldProps } from "formik";
-import axios, { AxiosError } from "axios";
+import { AxiosError, isAxiosError } from "axios";
 import { useMutation } from "@tanstack/react-query";
+import axiosInstance from "./axiosConfig";
 
 interface FormValues {
   privateKey: string;
@@ -22,14 +23,12 @@ interface FormValues {
 }
 
 async function handleSubmit(values: FormValues) {
-  const url =
-    "http://localhost:8080/transactions";
   try {
-    return await axios.post(url, values, {
+    return await axiosInstance.post('/transactions', values, {
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    if (axios.isAxiosError(error)) {
+    if (isAxiosError(error)) {
       const axiosError = error as AxiosError;
       if (
         axiosError.response &&

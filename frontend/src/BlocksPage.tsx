@@ -17,10 +17,10 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import BlocksTable, { BlockProps } from "./BlocksTable";
-import axios from "axios";
 import CenteredSpinner from "./CenteredSpinner";
 import ErrorAlert from "./ErrorAlert";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import axiosInstance from "./axiosConfig";
 
 interface Blockchain {
   blocks: BlockProps[];
@@ -28,8 +28,8 @@ interface Blockchain {
   miningReward: number;
 }
 
-async function fetchBlockchain(url: string): Promise<Blockchain> {
-  return await axios.get(url).then((res) => res.data);
+async function fetchBlockchain(endpoint: string): Promise<Blockchain> {
+  return await axiosInstance.get(endpoint).then((res) => res.data);
 }
 
 interface StartMiningResponse {
@@ -42,9 +42,7 @@ interface MiningStatusResponse {
 }
 
 async function startMiningProcess(): Promise<StartMiningResponse> {
-  const response = await axios.post(
-    "http://localhost:8080/blockchain/mine"
-  );
+  const response = await axiosInstance.post('/blockchain/mine');
   return response.data;
 }
 
@@ -55,10 +53,8 @@ function useStartMiningProcess() {
 async function fetchMiningStatus(
   processId: string
 ): Promise<MiningStatusResponse> {
-  const response = await axios.get(
-    `http://localhost:8080/blockchain/mine/${processId}/status`
-  );
-  console.log(response.data)
+  const response = await axiosInstance.get(`/blockchain/mine/${processId}/status`);
+  console.log(response.data);
   return response.data;
 }
 
@@ -74,12 +70,9 @@ function useMiningStatus(processId: string, enabled: boolean) {
 }
 
 export default function BlocksPage() {
-  const url =
-    "http://localhost:8080/blockchain";
-
   const { isPending, error, data, refetch } = useQuery({
-    queryKey: ["blockchain", url],
-    queryFn: () => fetchBlockchain(url),
+    queryKey: ["blockchain"],
+    queryFn: () => fetchBlockchain('/blockchain'),
   });
 
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -108,8 +101,10 @@ export default function BlocksPage() {
 
   if (miningStatusQuery.data) {
     const miningStatus = miningStatusQuery.data;
-    console.log(miningStatusQuery.data.status);
-    if (miningStatus.status === "successful" || miningStatus.status === "failed") {
+    if (
+      miningStatus.status === "successful" ||
+      miningStatus.status === "failed"
+    ) {
       setProcessId(null);
       setModalMessage(
         miningStatusQuery.data.details || "Mining process completed."
