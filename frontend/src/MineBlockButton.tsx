@@ -35,6 +35,7 @@ export default function MineBlockButton({
 
   const [processId, setProcessId] = useState<string | null>(null);
   const [modalMessage, setModalMessage] = useState<string | null>(null);
+  const [modalStatus, setModalStatus] = useState<'success' | 'error'>('error')
 
   const startMiningMutation = useMutation({ mutationFn: startMiningProcess });
   const miningStatusQuery = useQuery<MiningStatusResponse>({
@@ -53,6 +54,8 @@ export default function MineBlockButton({
   if (miningStatusQuery.data) {
     const status = miningStatusQuery.data.status;
     const finalStatuses = ["successful", "failed"];
+
+    if (status === 'successful') setModalStatus('success')
 
     if (finalStatuses.includes(status)) {
       setProcessId(null);
@@ -86,9 +89,7 @@ export default function MineBlockButton({
       )}
       <InformationModal
         message={modalMessage || ""}
-        status={
-          miningStatusQuery.data?.status === "successful" ? "success" : "error"
-        }
+        status={modalStatus}
         isOpen={isOpen}
         onClose={handleClose}
       />
