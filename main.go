@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -11,7 +12,40 @@ import (
 	"github.com/google/uuid"
 )
 
+func handler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		handleGET(w, r)
+	default:
+		http.Error(w, "Method not allowed!", http.StatusMethodNotAllowed)
+	}
+}
+
+func handleGET(w http.ResponseWriter, r *http.Request) {
+	var filename = "transactions_pool.json"
+	jsonFile, err := os.ReadFile(filename)
+	if err != nil {
+		fmt.Println("Error during reading file:", err)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonFile)
+	w.WriteHeader(http.StatusOK)
+}
+
+func StartWebServer(port string) {
+	err := http.ListenAndServe(":8888", nil)
+	if err != nil {
+		fmt.Println("Fatal server error:", err)
+	}
+}
+
 func main() {
+	// Регистрируем обработчик для роута "/"
+	http.HandleFunc("/transactions/pool/", handler)
+
+	go StartWebServer(":8888")
+
 	chain := InitBlockchain(5, 5, 5)
 
 	listenAddress := flag.String("address", "localhost:8080", "Address to listen on")
