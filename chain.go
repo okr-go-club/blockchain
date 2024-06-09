@@ -222,20 +222,20 @@ type Blockchain struct {
 	MiningReward        float64
 }
 
-func (b *Blockchain) AddBlock(block Block) {
-	if len(b.Blocks) != 0 {
-		block.PreviousHash = b.Blocks[len(b.Blocks)-1].Hash
+func (chain *Blockchain) AddBlock(block Block) {
+	if len(chain.Blocks) != 0 {
+		block.PreviousHash = chain.Blocks[len(chain.Blocks)-1].Hash
 	}
-	b.Blocks = append(b.Blocks, block)
+	chain.Blocks = append(chain.Blocks, block)
 }
 
-func (b *Blockchain) AddTransactionToPool(t Transaction) {
-	b.PendingTransactions = append(b.PendingTransactions, t)
+func (chain *Blockchain) AddTransactionToPool(t Transaction) {
+	chain.PendingTransactions = append(chain.PendingTransactions, t)
 }
 
-func (b *Blockchain) GetBalance(address string) float64 {
+func (chain *Blockchain) GetBalance(address string) float64 {
 	var balance float64 = 0
-	for _, block := range b.Blocks {
+	for _, block := range chain.Blocks {
 		for _, t := range block.Transactions {
 			switch address {
 			case t.ToAddress:
@@ -250,9 +250,9 @@ func (b *Blockchain) GetBalance(address string) float64 {
 	return balance
 }
 
-func (b Blockchain) IsValid() bool {
+func (chain *Blockchain) IsValid() bool {
 	previousHash := ""
-	for index, block := range b.Blocks {
+	for index, block := range chain.Blocks {
 		if !block.IsValid() {
 			return false
 		}
@@ -333,8 +333,8 @@ func (w *Wallet) KeyGen() {
 	w.publicKey = publicKeyPEMStr
 }
 
-func privateKeyToPEMString(privKey *ecdsa.PrivateKey) (string, error) {
-	der, err := x509.MarshalECPrivateKey(privKey)
+func privateKeyToPEMString(privateKey *ecdsa.PrivateKey) (string, error) {
+	der, err := x509.MarshalECPrivateKey(privateKey)
 	if err != nil {
 		return "", err
 	}

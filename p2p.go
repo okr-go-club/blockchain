@@ -31,7 +31,12 @@ func (node *Node) StartServer(chain *Blockchain) {
 		fmt.Println("Error starting server:", err)
 		os.Exit(1)
 	}
-	defer listener.Close()
+	defer func() {
+		err := listener.Close()
+		if err != nil {
+			fmt.Println("Error closing listener:", err)
+		}
+	}()
 
 	fmt.Println("Server started on", node.Address)
 	for {
@@ -87,7 +92,12 @@ func ProcessMessage(message string, chain *Blockchain) error {
 }
 
 func (node *Node) HandleConnection(conn net.Conn, chain *Blockchain) {
-	defer conn.Close()
+	defer func() {
+		err := conn.Close()
+		if err != nil {
+			fmt.Println("Error closing connection:", err)
+		}
+	}()
 	reader := bufio.NewReader(conn)
 
 	// Read initial hello message

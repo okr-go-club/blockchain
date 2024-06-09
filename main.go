@@ -2,19 +2,23 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
 )
 
 func main() {
-	chain := InitBlockchain(5, 5, 5)
-
+	chain := InitBlockchain(6, 5, 5)
+	miningLock := sync.Mutex{}
 	listenAddress := flag.String("address", "localhost:8080", "Address to listen on")
+	httpAddress := flag.String("http", "localhost:8090", "Address to listen on")
 	peers := flag.String("peers", "", "Comma-separated list of peers to connect to")
 	flag.Parse()
 
@@ -27,6 +31,57 @@ func main() {
 			go node.ConnectToPeer(peer, chain)
 		}
 	}
+
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		_, err := w.Write([]byte("Hello World!\n"))
+		if err != nil {
+			fmt.Println("Error while handle request", err)
+		}
+	})
+
+	mux.HandleFunc("/mine", func(w http.ResponseWriter, r *http.Request) {
+		id, err := uuid.NewUUID()
+		if err != nil {
+			fmt.Println("Error while handle request", err)
+		}
+		go func() {
+			lock := miningLock.TryLock()
+			if !lock {
+				fmt.Println("Already mine block")
+				return
+			}
+			defer miningLock.Unlock()
+			chain.MinePendingTransactions("")
+		}()
+
+		_, err = w.Write([]byte(fmt.Sprintf("id: %s\n", id.String())))
+		if err != nil {
+			fmt.Println("Error while handle request", err)
+		}
+	})
+
+	mux.HandleFunc("/mine/status", func(w http.ResponseWriter, r *http.Request) {
+		_, err := w.Write([]byte("Hello World!\n"))
+		if err != nil {
+			fmt.Println("Error while handle request", err)
+		}
+	})
+
+	server := http.Server{
+		Addr:    *httpAddress,
+		Handler: mux,
+	}
+
+	go func() {
+		err := server.ListenAndServe()
+		if err != nil {
+			if !errors.Is(err, http.ErrServerClosed) {
+				panic(err)
+			}
+		}
+	}()
 
 	go func() {
 		stdReader := bufio.NewReader(os.Stdin)
