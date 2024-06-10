@@ -29,12 +29,19 @@ func handleGET(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(jsonFile)
+	_, err = w.Write(jsonFile)
+
+	if err != nil {
+		fmt.Println("Error during writing response:", err)
+		w.WriteHeader(http.StatusBadGateway)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 }
 
 func StartWebServer(port string) {
-	err := http.ListenAndServe(":8888", nil)
+	err := http.ListenAndServe(port, nil)
 	if err != nil {
 		fmt.Println("Fatal server error:", err)
 	}
