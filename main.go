@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"flag"
 	"fmt"
 	"net/http"
@@ -19,26 +20,13 @@ func setCORSHeaders(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
+func getTransactionPool(w http.ResponseWriter, r *http.Request) {
+	filename := "transactions_pool.json"
+	body := getResponseFromFile(w, filename)
+
 	setCORSHeaders(w)
-
-	switch r.Method {
-	case http.MethodGet:
-		handleGET(w, r)
-	default:
-		http.Error(w, "Method not allowed!", http.StatusMethodNotAllowed)
-	}
-}
-
-func handleGET(w http.ResponseWriter, r *http.Request) {
-	var filename = "transactions_pool.json"
-	jsonFile, err := os.ReadFile(filename)
-	if err != nil {
-		fmt.Println("Error during reading file:", err)
-	}
-
 	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(jsonFile)
+	_, err := w.Write(body)
 
 	if err != nil {
 		fmt.Println("Error during writing response:", err)
@@ -48,18 +36,34 @@ func handleGET(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func StartWebServer(port string) {
-	err := http.ListenAndServe(port, nil)
+func getResponseFromFile(w http.ResponseWriter, filename string) []byte {
+	jsonFile, err := os.ReadFile(filename)
 	if err != nil {
-		fmt.Println("Fatal server error:", err)
+		fmt.Println("Error during reading file:", err)
+	}
+	return jsonFile
+}
+
+func StartWebServer(server http.Server) {
+	err := server.ListenAndServe()
+	if err != nil {
+		if !errors.Is(err, http.ErrServerClosed) {
+			panic(err)
+		}
 	}
 }
 
 func main() {
-	// Регистрируем обработчик для роута "/"
-	http.HandleFunc("/transactions/pool/", handler)
+	// Регистрируем обработчики для роутов
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /transactions/pool/", getTransactionPool)
 
-	go StartWebServer(":8888")
+	server := http.Server{
+		Addr:    "localhost:8888",
+		Handler: mux,
+	}
+
+	go StartWebServer(server)
 
 	chain := InitBlockchain(5, 5, 5)
 
