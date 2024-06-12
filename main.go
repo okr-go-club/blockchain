@@ -44,7 +44,7 @@ func getResponseFromFile(w http.ResponseWriter, filename string) []byte {
 	return jsonFile
 }
 
-func StartWebServer(server http.Server) {
+func StartWebServer(server *http.Server) {
 	err := server.ListenAndServe()
 	if err != nil {
 		if !errors.Is(err, http.ErrServerClosed) {
@@ -63,7 +63,7 @@ func main() {
 		Handler: mux,
 	}
 
-	go StartWebServer(server)
+	go StartWebServer(&server)
 
 	chain := InitBlockchain(5, 5, 5)
 
