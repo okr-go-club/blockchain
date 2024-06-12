@@ -8,7 +8,7 @@ import CenteredSpinner from "./CenteredSpinner";
 import axiosInstance from "./axiosConfig";
 
 async function fetchTransactions(): Promise<TransactionProps[]> {
-  return await axiosInstance.get("/transactions").then((res) => res.data);
+  return await axiosInstance.get("/transactions/pool/").then((res) => res.data);
 }
 
 export default function TransactionsPage({ caption }: { caption: string }) {
