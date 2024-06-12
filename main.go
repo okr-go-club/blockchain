@@ -12,7 +12,16 @@ import (
 	"github.com/google/uuid"
 )
 
+func setCORSHeaders(w http.ResponseWriter) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+}
+
 func handler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w)
+
 	switch r.Method {
 	case http.MethodGet:
 		handleGET(w, r)
