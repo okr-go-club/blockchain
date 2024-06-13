@@ -36,6 +36,22 @@ func getTransactionPool(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+func getBlocksPool(w http.ResponseWriter, r *http.Request) {
+	filename := "blocks_pool.json"
+	body := getResponseFromFile(w, filename)
+
+	setCORSHeaders(w)
+	w.Header().Set("Content-Type", "application/json")
+	_, err := w.Write(body)
+
+	if err != nil {
+		fmt.Println("Error during writing response:", err)
+		w.WriteHeader(http.StatusBadGateway)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
 func getResponseFromFile(w http.ResponseWriter, filename string) []byte {
 	jsonFile, err := os.ReadFile(filename)
 	if err != nil {
@@ -57,6 +73,7 @@ func main() {
 	// Регистрируем обработчики для роутов
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /transactions/pool/", getTransactionPool)
+	mux.HandleFunc("GET /blocks/pool/", getBlocksPool)
 
 	server := http.Server{
 		Addr:    "localhost:8888",
