@@ -17,9 +17,11 @@ import (
 func main() {
 	chain := InitBlockchain(6, 5, 5)
 	miningLock := sync.Mutex{}
+	statusesLock := sync.RWMutex{}
 	listenAddress := flag.String("address", "localhost:8080", "Address to listen on")
 	httpAddress := flag.String("http", "localhost:8090", "Address to listen on")
 	peers := flag.String("peers", "", "Comma-separated list of peers to connect to")
+	miningStatuses := map[uuid.UUID]string{}
 	flag.Parse()
 
 	node := NewNode(*listenAddress, strings.Split(*peers, ","))
@@ -41,29 +43,44 @@ func main() {
 		}
 	})
 
-	mux.HandleFunc("/mine", func(w http.ResponseWriter, r *http.Request) {
-		id, err := uuid.NewUUID()
-		if err != nil {
-			fmt.Println("Error while handle request", err)
+	mux.HandleFunc("GET /mine", func(w http.ResponseWriter, r *http.Request) {
+		id := uuid.New()
+		lock := miningLock.TryLock()
+		if !lock {
+			fmt.Println("Already mine block")
+			_, err := w.Write([]byte(fmt.Sprintf("Mining already started")))
+			if err != nil {
+				fmt.Println("Error while handle request", err)
+			}
+			return
 		}
 		go func() {
-			lock := miningLock.TryLock()
-			if !lock {
-				fmt.Println("Already mine block")
-				return
-			}
 			defer miningLock.Unlock()
+			statusesLock.Lock()
+			miningStatuses[id] = "processing"
+			statusesLock.Unlock()
 			chain.MinePendingTransactions("")
+			statusesLock.Lock()
+			miningStatuses[id] = "finished"
+			statusesLock.Unlock()
 		}()
 
-		_, err = w.Write([]byte(fmt.Sprintf("id: %s\n", id.String())))
+		_, err := w.Write([]byte(fmt.Sprintf("id: %s\n", id.String())))
 		if err != nil {
 			fmt.Println("Error while handle request", err)
 		}
 	})
 
-	mux.HandleFunc("/mine/status", func(w http.ResponseWriter, r *http.Request) {
-		_, err := w.Write([]byte("Hello World!\n"))
+	mux.HandleFunc("GET /mine/status", func(w http.ResponseWriter, r *http.Request) {
+		rawId := r.URL.Query().Get("id")
+		id, err := uuid.Parse(rawId)
+		if err != nil {
+			fmt.Println("Error while handle request", err)
+		}
+		statusesLock.RLock()
+		status := miningStatuses[id]
+		statusesLock.RUnlock()
+		_, err = w.Write([]byte(fmt.Sprintf("status for %s: %s\n", id.String(), status)))
 		if err != nil {
 			fmt.Println("Error while handle request", err)
 		}
