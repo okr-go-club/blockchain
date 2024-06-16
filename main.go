@@ -2,8 +2,10 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -11,8 +13,33 @@ import (
 	"github.com/google/uuid"
 )
 
+type APIHandler struct {
+	blockchain *Blockchain
+	node       *Node
+}
+
+func (api *APIHandler) AddTransactionHandler(w http.ResponseWriter, r *http.Request) {
+	var transaction Transaction
+
+	err := json.NewDecoder(r.Body).Decode(&transaction)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if !transaction.IsValid() {
+		http.Error(w, "Invalid transaction", http.StatusBadRequest)
+		return
+	}
+
+	api.blockchain.AddTransactionToPool(transaction)
+	api.node.BroadcastTransaction(transaction)
+
+	w.Write([]byte("Transaction added to the blockchain\n"))
+}
+
 func main() {
-	chain := InitBlockchain(5, 5, 5)
+	blockchain := InitBlockchain(5, 5, 5)
 
 	listenAddress := flag.String("address", "localhost:8080", "Address to listen on")
 	peers := flag.String("peers", "", "Comma-separated list of peers to connect to")
@@ -20,11 +47,18 @@ func main() {
 
 	node := NewNode(*listenAddress, strings.Split(*peers, ","))
 
-	go node.StartServer(chain)
+	apiHandler := APIHandler{blockchain: blockchain, node: node}
+
+	go func() {
+		http.HandleFunc("/api/add-transaction", apiHandler.AddTransactionHandler)
+		http.ListenAndServe(":8888", nil)
+	}()
+
+	go node.StartServer(blockchain)
 
 	for _, peer := range node.Peers {
 		if peer != "" {
-			go node.ConnectToPeer(peer, chain)
+			go node.ConnectToPeer(peer, blockchain)
 		}
 	}
 
