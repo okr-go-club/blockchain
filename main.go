@@ -2,11 +2,13 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"net/http"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -14,14 +16,30 @@ import (
 	"github.com/google/uuid"
 )
 
+type MineStatusResponse struct {
+	Status  string `json:"status"`
+	Details string `json:"details,omitempty"`
+}
+
+type MineResponse struct {
+	Id string `json:"id"`
+}
+
+const (
+	StatusPending    = "pending"
+	StatusSuccessful = "successful"
+	StatusFailed     = "failed"
+)
+
 func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	chain := InitBlockchain(6, 5, 5)
 	miningLock := sync.Mutex{}
 	statusesLock := sync.RWMutex{}
 	listenAddress := flag.String("address", "localhost:8080", "Address to listen on")
 	httpAddress := flag.String("http", "localhost:8090", "Address to listen on")
 	peers := flag.String("peers", "", "Comma-separated list of peers to connect to")
-	miningStatuses := map[uuid.UUID]string{}
+	miningStatuses := map[uuid.UUID]MineStatusResponse{}
 	flag.Parse()
 
 	node := NewNode(*listenAddress, strings.Split(*peers, ","))
@@ -36,14 +54,7 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		_, err := w.Write([]byte("Hello World!\n"))
-		if err != nil {
-			fmt.Println("Error while handle request", err)
-		}
-	})
-
-	mux.HandleFunc("GET /mine", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /blockchain/mine", func(w http.ResponseWriter, r *http.Request) {
 		id := uuid.New()
 		lock := miningLock.TryLock()
 		if !lock {
@@ -55,32 +66,51 @@ func main() {
 			return
 		}
 		go func() {
-			defer miningLock.Unlock()
+			defer func() {
+				if r := recover(); r != nil {
+					statusesLock.Lock()
+					miningStatuses[id] = MineStatusResponse{
+						Status:  StatusFailed,
+						Details: fmt.Sprintf("Panic: %v", r),
+					}
+					statusesLock.Unlock()
+				}
+				miningLock.Unlock()
+			}()
 			statusesLock.Lock()
-			miningStatuses[id] = "processing"
+			miningStatuses[id] = MineStatusResponse{Status: StatusPending}
 			statusesLock.Unlock()
 			chain.MinePendingTransactions("")
 			statusesLock.Lock()
-			miningStatuses[id] = "finished"
+			miningStatuses[id] = MineStatusResponse{Status: StatusSuccessful}
 			statusesLock.Unlock()
 		}()
-
-		_, err := w.Write([]byte(fmt.Sprintf("id: %s\n", id.String())))
+		err := json.NewEncoder(w).Encode(MineResponse{Id: id.String()})
 		if err != nil {
 			fmt.Println("Error while handle request", err)
 		}
 	})
 
-	mux.HandleFunc("GET /mine/status", func(w http.ResponseWriter, r *http.Request) {
-		rawId := r.URL.Query().Get("id")
+	mux.HandleFunc("GET /blockchain/mine/{id}/status", func(w http.ResponseWriter, r *http.Request) {
+		rawId := r.PathValue("id")
 		id, err := uuid.Parse(rawId)
 		if err != nil {
 			fmt.Println("Error while handle request", err)
+			w.WriteHeader(http.StatusBadRequest)
+			_, err = w.Write([]byte(fmt.Sprintf("Invalid id: %s", rawId)))
+			if err != nil {
+				fmt.Println("Error while handle request", err)
+			}
+			return
 		}
 		statusesLock.RLock()
 		status := miningStatuses[id]
 		statusesLock.RUnlock()
-		_, err = w.Write([]byte(fmt.Sprintf("status for %s: %s\n", id.String(), status)))
+		if (status == MineStatusResponse{}) {
+			http.NotFound(w, r)
+			return
+		}
+		err = json.NewEncoder(w).Encode(status)
 		if err != nil {
 			fmt.Println("Error while handle request", err)
 		}
