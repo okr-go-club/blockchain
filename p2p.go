@@ -52,30 +52,53 @@ func ProcessMessage(message string, chain *Blockchain) error {
 		return err
 	}
 
-	if msgType, ok := msgMap["type"]; ok && msgType == "transaction" {
-		var tx Transaction
-		if txData, ok := msgMap["transaction"].(map[string]interface{}); ok {
-			txJson, err := json.Marshal(txData)
-			if err != nil {
-				fmt.Println("Error marshalling transaction:", err)
-				return err
-			}
+	if msgType, ok := msgMap["type"]; ok {
+		switch msgType {
+		case "transaction":
+			var tx Transaction
+			if txData, ok := msgMap["transaction"].(map[string]interface{}); ok {
+				txJson, err := json.Marshal(txData)
+				if err != nil {
+					fmt.Println("Error marshalling transaction:", err)
+					return err
+				}
 
-			err = json.Unmarshal(txJson, &tx)
-			if err != nil {
-				fmt.Println("Error unmarshalling transaction:", err)
-				return err
+				err = json.Unmarshal(txJson, &tx)
+				if err != nil {
+					fmt.Println("Error unmarshalling transaction:", err)
+					return err
+				}
+				fmt.Println("Received transaction:", tx)
+				chain.AddTransactionToPool(tx)
+				fmt.Println("Transaction pool:", chain.PendingTransactions)
+			} else {
+				fmt.Println("Invalid transaction data")
 			}
-			fmt.Println("Received transaction:", tx)
-			chain.AddTransactionToPool(tx)
-			fmt.Println("Transaction pool:", chain.PendingTransactions)
-		} else {
-			fmt.Println("Invalid transaction data")
+		case "block":
+			var block Block
+			if blockData, ok := msgMap["block"].(map[string]interface{}); ok {
+				blockJson, err := json.Marshal(blockData)
+				if err != nil {
+					fmt.Println("Error marshalling block:", err)
+					return err
+				}
+				err = json.Unmarshal(blockJson, &block)
+				if err != nil {
+					fmt.Println("Error unmarshalling block:", err)
+					return err
+				}
+				fmt.Println("Received block:", block)
+				chain.AddBlock(block)
+				fmt.Println("Blockchain:", chain.Blocks)
+			} else {
+				fmt.Println("Invalid block data")
+			}
+		default:
+			fmt.Println("Unknown message type")
 		}
 	} else {
-		fmt.Println("Unknown message type")
+		fmt.Println("No message type present")
 	}
-
 	return nil
 }
 
