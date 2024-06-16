@@ -1,16 +1,11 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
-	"time"
-
-	"github.com/google/uuid"
 )
 
 type APIHandler struct {
@@ -35,7 +30,11 @@ func (api *APIHandler) AddTransactionHandler(w http.ResponseWriter, r *http.Requ
 	api.blockchain.AddTransactionToPool(transaction)
 	api.node.BroadcastTransaction(transaction)
 
-	w.Write([]byte("Transaction added to the blockchain\n"))
+	_, err = w.Write([]byte("Transaction added to the blockchain\n"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 func main() {
@@ -51,7 +50,10 @@ func main() {
 
 	go func() {
 		http.HandleFunc("/api/add-transaction", apiHandler.AddTransactionHandler)
-		http.ListenAndServe(":8888", nil)
+		err := http.ListenAndServe(":8888", nil)
+		if err != nil {
+			return
+		}
 	}()
 
 	go node.StartServer(blockchain)
@@ -61,40 +63,6 @@ func main() {
 			go node.ConnectToPeer(peer, blockchain)
 		}
 	}
-
-	go func() {
-		stdReader := bufio.NewReader(os.Stdin)
-		for {
-			fmt.Print("Enter message to broadcast (transaction/block): ")
-			msg, err := stdReader.ReadString('\n')
-			if err != nil {
-				fmt.Println("Error reading from stdin:", err)
-				return
-			}
-			msg = strings.TrimSpace(msg)
-			switch msg {
-			case "transaction":
-				tx := Transaction{
-					FromAddress:   "Alice",
-					ToAddress:     "Bob",
-					Amount:        5.00,
-					Timestamp:     int(time.Now().Unix()),
-					TransactionId: uuid.New().String(),
-				}
-				node.BroadcastTransaction(tx)
-			case "block":
-				block := Block{
-					Transactions: nil,
-					Timestamp:    time.Now().Unix(),
-					Capacity:     5,
-					PreviousHash: "previousHash",
-				}
-				node.BroadcastBlock(block)
-			default:
-				fmt.Println("Unknown message type")
-			}
-		}
-	}()
 
 	select {}
 }
