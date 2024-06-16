@@ -156,7 +156,12 @@ func (t *Transaction) Sign(privateKeyPEMStr string) error {
 }
 
 func (t *Transaction) verifySignature() (bool, error) {
-	pemBlock, _ := pem.Decode([]byte(t.FromAddress))
+	var signatureKey = `
+-----BEGIN PUBLIC KEY-----
+` + t.Signature + `
+-----END PUBLIC KEY-----
+`
+	pemBlock, _ := pem.Decode([]byte(signatureKey))
 	if pemBlock == nil {
 		return false, errors.New("failed to parse PEM block containing the key")
 	}
@@ -176,22 +181,13 @@ func (t *Transaction) verifySignature() (bool, error) {
 		return false, err
 	}
 
-	var sigStruct struct {
-		R, S *big.Int
-	}
-
-	_, err = asn1.Unmarshal(signatureBytes, &sigStruct)
-	if err != nil {
-		return false, err
-	}
-
 	hash, err := hex.DecodeString(t.calculateHash())
 	if err != nil {
 		return false, err
 	}
 
 	hashed := sha256.Sum256(hash)
-	valid := ecdsa.Verify(publicKey, hashed[:], sigStruct.R, sigStruct.S)
+	valid := ecdsa.VerifyASN1(publicKey, hashed[:], signatureBytes)
 	if !valid {
 		return false, errors.New("signature verification failed")
 	}
