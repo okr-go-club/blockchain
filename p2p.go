@@ -52,35 +52,28 @@ func ProcessMessage(message string, chain *Blockchain) error {
 		return err
 	}
 
-	if msgType, ok := msgMap["type"]; ok {
-		switch msgType {
-		case "transaction":
-			var tx Transaction
-			err = json.Unmarshal([]byte(message), &tx)
+	if msgType, ok := msgMap["type"]; ok && msgType == "transaction" {
+		var tx Transaction
+		if txData, ok := msgMap["transaction"].(map[string]interface{}); ok {
+			txJson, err := json.Marshal(txData)
+			if err != nil {
+				fmt.Println("Error marshalling transaction:", err)
+				return err
+			}
+
+			err = json.Unmarshal(txJson, &tx)
 			if err != nil {
 				fmt.Println("Error unmarshalling transaction:", err)
 				return err
-			} else {
-				fmt.Println("Received transaction:", tx)
-				chain.AddTransactionToPool(tx)
-				fmt.Println("Transaction pool:", chain.PendingTransactions)
 			}
-		case "block":
-			var block Block
-			err = json.Unmarshal([]byte(message), &block)
-			if err != nil {
-				fmt.Println("Error unmarshalling block:", err)
-				return err
-			} else {
-				fmt.Println("Received block:", block)
-				chain.AddBlock(block)
-				fmt.Println("Blocks:", chain.Blocks)
-			}
-		default:
-			fmt.Println("Unknown message type")
+			fmt.Println("Received transaction:", tx)
+			chain.AddTransactionToPool(tx)
+			fmt.Println("Transaction pool:", chain.PendingTransactions)
+		} else {
+			fmt.Println("Invalid transaction data")
 		}
 	} else {
-		fmt.Println("Message does not contain a type")
+		fmt.Println("Unknown message type")
 	}
 
 	return nil
