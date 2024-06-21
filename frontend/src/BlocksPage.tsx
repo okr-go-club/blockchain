@@ -7,9 +7,9 @@ import axiosInstance from "./axiosConfig";
 import MineBlockButton from "./MineBlockButton";
 
 interface Blockchain {
-  blocks: BlockProps[];
-  maxBlockSize: number;
-  miningReward: number;
+  Blocks: BlockProps[];
+  MaxBlockSize: number;
+  MiningReward: number;
 }
 
 async function fetchBlockchain(): Promise<Blockchain> {
@@ -22,19 +22,20 @@ export default function BlocksPage() {
     queryFn: fetchBlockchain,
   });
 
+  if (data === undefined) return <>There is no blocks yet.</>
   if (isPending) return <CenteredSpinner />;
   if (error) return <ErrorAlert message={error.toString()} />;
 
   return (
     <Box>
       <>
-        <BlocksTable blocks={data.blocks} />
+        <BlocksTable blocks={data.Blocks} />
         <Flex justifyContent={"space-between"} mt={4}>
           <Text as={"b"} fontSize={"1xl"}>
-            Block Size: {data.maxBlockSize}
+            Block Size: {data.MaxBlockSize}
           </Text>
           <Text as={"b"} fontSize={"1xl"}>
-            Mining Reward: {data.miningReward}
+            Mining Reward: {data.MiningReward}
           </Text>
           <MineBlockButton refetchParentPage={refetch} />
         </Flex>
