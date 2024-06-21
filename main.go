@@ -46,14 +46,6 @@ func (api *APIHandler) getTransactionPool(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusOK)
 }
 
-func getResponseFromFile(filename string) []byte {
-	jsonFile, err := os.ReadFile(filename)
-	if err != nil {
-		fmt.Println("Error during reading file:", err)
-	}
-	return jsonFile
-}
-
 func StartWebServer(server *http.Server) {
 	err := server.ListenAndServe()
 	if err != nil {
