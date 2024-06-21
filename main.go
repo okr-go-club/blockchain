@@ -2,12 +2,14 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -20,13 +22,21 @@ func setCORSHeaders(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 }
 
-func getTransactionPool(w http.ResponseWriter, r *http.Request) {
-	filename := "transactions_pool.json"
-	body := getResponseFromFile(w, filename)
+type APIHandler struct {
+	blockchain *Blockchain
+	rwLock     *sync.RWMutex
+}
+
+func (api *APIHandler) getTransactionPool(w http.ResponseWriter, r *http.Request) {
+
+	api.rwLock.Lock()
+	transactions := api.blockchain.PendingTransactions
+	jsonTransactions, _ := json.Marshal(transactions)
+	api.rwLock.Unlock()
 
 	setCORSHeaders(w)
 	w.Header().Set("Content-Type", "application/json")
-	_, err := w.Write(body)
+	_, err := w.Write(jsonTransactions)
 
 	if err != nil {
 		fmt.Println("Error during writing response:", err)
@@ -36,13 +46,15 @@ func getTransactionPool(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func getBlocksPool(w http.ResponseWriter, r *http.Request) {
-	filename := "blocks_pool.json"
-	body := getResponseFromFile(w, filename)
+func (api *APIHandler) getBlocksPool(w http.ResponseWriter, r *http.Request) {
+	api.rwLock.Lock()
+	blocks := api.blockchain
+	jsonBlocks, _ := json.Marshal(blocks)
+	api.rwLock.Unlock()
 
 	setCORSHeaders(w)
 	w.Header().Set("Content-Type", "application/json")
-	_, err := w.Write(body)
+	_, err := w.Write(jsonBlocks)
 
 	if err != nil {
 		fmt.Println("Error during writing response:", err)
@@ -50,14 +62,6 @@ func getBlocksPool(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-}
-
-func getResponseFromFile(w http.ResponseWriter, filename string) []byte {
-	jsonFile, err := os.ReadFile(filename)
-	if err != nil {
-		fmt.Println("Error during reading file:", err)
-	}
-	return jsonFile
 }
 
 func StartWebServer(server *http.Server) {
@@ -70,10 +74,15 @@ func StartWebServer(server *http.Server) {
 }
 
 func main() {
+	chain := InitBlockchain(5, 5, 5)
+	rwLock := sync.RWMutex{}
+
+	apiHandler := APIHandler{blockchain: chain, rwLock: &rwLock}
 	// Регистрируем обработчики для роутов
+
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /transactions/pool/", getTransactionPool)
-	mux.HandleFunc("GET /blocks/pool/", getBlocksPool)
+	mux.HandleFunc("GET /transactions/pool/", apiHandler.getTransactionPool)
+	mux.HandleFunc("GET /blocks/pool/", apiHandler.getBlocksPool)
 
 	server := http.Server{
 		Addr:    "localhost:8888",
@@ -81,8 +90,6 @@ func main() {
 	}
 
 	go StartWebServer(&server)
-
-	chain := InitBlockchain(5, 5, 5)
 
 	listenAddress := flag.String("address", "localhost:8080", "Address to listen on")
 	peers := flag.String("peers", "", "Comma-separated list of peers to connect to")

@@ -17,6 +17,7 @@ export default function TransactionsPage({ caption }: { caption: string }) {
     queryFn: fetchTransactions,
   });
 
+  if (!data || !data.length) return <>There is no transactions yet.</>
   if (isPending) return <CenteredSpinner />;
   if (error) return <ErrorAlert message={error.toString()} />;
 
