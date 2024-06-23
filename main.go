@@ -47,10 +47,10 @@ func (api *APIHandler) getTransactionPool(w http.ResponseWriter, r *http.Request
 }
 
 func (api *APIHandler) getBlocksPool(w http.ResponseWriter, r *http.Request) {
-	api.rwLock.Lock()
+	api.rwLock.RLock()
 	blocks := api.blockchain
 	jsonBlocks, _ := json.Marshal(blocks)
-	api.rwLock.Unlock()
+	api.rwLock.RUnlock()
 
 	setCORSHeaders(w)
 	w.Header().Set("Content-Type", "application/json")
