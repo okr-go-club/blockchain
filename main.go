@@ -29,10 +29,10 @@ type APIHandler struct {
 
 func (api *APIHandler) getTransactionPool(w http.ResponseWriter, r *http.Request) {
 
-	api.rwLock.Lock()
+	api.rwLock.RLock()
 	transactions := api.blockchain.PendingTransactions
 	jsonTransactions, _ := json.Marshal(transactions)
-	api.rwLock.Unlock()
+	api.rwLock.RUnlock()
 
 	setCORSHeaders(w)
 	w.Header().Set("Content-Type", "application/json")
