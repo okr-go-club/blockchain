@@ -10,6 +10,16 @@ import (
 	"sync"
 )
 
+func SetCORSHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		next.ServeHTTP(w, req)
+	})
+}
+
 type Handler struct {
 	Blockchain     *chain.Blockchain
 	Node           *p2p.Node

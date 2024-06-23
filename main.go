@@ -50,7 +50,7 @@ func main() {
 
 	server := http.Server{
 		Addr:    *httpAddress,
-		Handler: mux,
+		Handler: api.SetCORSHeaders(mux),
 	}
 
 	go func() {
