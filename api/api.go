@@ -38,7 +38,7 @@ func (h *Handler) MineBlock(w http.ResponseWriter, r *http.Request) {
 	lock := h.MiningLock.TryLock()
 	if !lock {
 		fmt.Println("Already mine block")
-		_, err := w.Write([]byte(fmt.Sprintf("Mining already started")))
+		_, err := w.Write([]byte("Mining already started"))
 		if err != nil {
 			fmt.Println("Error while handle request", err)
 		}
