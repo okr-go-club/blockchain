@@ -1,4 +1,4 @@
-package main
+package chain
 
 import (
 	"crypto/ecdsa"
@@ -124,13 +124,13 @@ func (t *Transaction) IsValid() bool {
 	return isValid
 }
 
-func (t *Transaction) Sign(privateKeyPEMStr string) error {
-	pemBlock, _ := pem.Decode([]byte(privateKeyPEMStr))
+func (t *Transaction) Sign(PrivateKeyPEMStr string) error {
+	pemBlock, _ := pem.Decode([]byte(PrivateKeyPEMStr))
 	if pemBlock == nil {
 		return errors.New("failed to parse PEM block containing the key")
 	}
 
-	privateKey, err := x509.ParseECPrivateKey(pemBlock.Bytes)
+	PrivateKey, err := x509.ParseECPrivateKey(pemBlock.Bytes)
 	if err != nil {
 		return err
 	}
@@ -141,7 +141,7 @@ func (t *Transaction) Sign(privateKeyPEMStr string) error {
 	}
 
 	hashed := sha256.Sum256(hash)
-	r, s, err := ecdsa.Sign(rand.Reader, privateKey, hashed[:])
+	r, s, err := ecdsa.Sign(rand.Reader, PrivateKey, hashed[:])
 	if err != nil {
 		return err
 	}
@@ -161,12 +161,12 @@ func (t *Transaction) verifySignature() (bool, error) {
 		return false, errors.New("failed to parse PEM block containing the key")
 	}
 
-	publicKeyInterface, err := x509.ParsePKIXPublicKey(pemBlock.Bytes)
+	PublicKeyInterface, err := x509.ParsePKIXPublicKey(pemBlock.Bytes)
 	if err != nil {
 		return false, err
 	}
 
-	publicKey, ok := publicKeyInterface.(*ecdsa.PublicKey)
+	PublicKey, ok := PublicKeyInterface.(*ecdsa.PublicKey)
 	if !ok {
 		return false, errors.New("not ECDSA public key")
 	}
@@ -191,7 +191,7 @@ func (t *Transaction) verifySignature() (bool, error) {
 	}
 
 	hashed := sha256.Sum256(hash)
-	valid := ecdsa.Verify(publicKey, hashed[:], sigStruct.R, sigStruct.S)
+	valid := ecdsa.Verify(PublicKey, hashed[:], sigStruct.R, sigStruct.S)
 	if !valid {
 		return false, errors.New("signature verification failed")
 	}
@@ -199,7 +199,7 @@ func (t *Transaction) verifySignature() (bool, error) {
 	return true, nil
 }
 
-func NewTransaction(privateKey, fromAddress, toAddress string, amount float64) (Transaction, error) {
+func NewTransaction(PrivateKey, fromAddress, toAddress string, amount float64) (Transaction, error) {
 	t := Transaction{
 		FromAddress:   fromAddress,
 		ToAddress:     toAddress,
@@ -207,7 +207,7 @@ func NewTransaction(privateKey, fromAddress, toAddress string, amount float64) (
 		Timestamp:     int(time.Now().Unix()),
 		TransactionId: uuid.New().String(),
 	}
-	err := t.Sign(privateKey)
+	err := t.Sign(PrivateKey)
 	if err != nil {
 		return Transaction{}, err
 	}
@@ -312,29 +312,29 @@ func InitBlockchain(difficulty, maxBlockSize int, miningReward float64) *Blockch
 }
 
 type Wallet struct {
-	privateKey string
-	publicKey  string
+	PrivateKey string
+	PublicKey  string
 }
 
 func (w *Wallet) KeyGen() {
-	privateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	privateKeyPEMStr, err := privateKeyToPEMString(privateKey)
+	PrivateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	PrivateKeyPEMStr, err := PrivateKeyToPEMString(PrivateKey)
 	if err != nil {
 		fmt.Println("Error converting private key to PEM:", err)
 		return
 	}
-	w.privateKey = privateKeyPEMStr
+	w.PrivateKey = PrivateKeyPEMStr
 
-	publicKeyPEMStr, err := publicKeyToPEMString(&privateKey.PublicKey)
+	PublicKeyPEMStr, err := PublicKeyToPEMString(&PrivateKey.PublicKey)
 	if err != nil {
 		fmt.Println("Error converting private key to PEM:", err)
 		return
 	}
-	w.publicKey = publicKeyPEMStr
+	w.PublicKey = PublicKeyPEMStr
 }
 
-func privateKeyToPEMString(privateKey *ecdsa.PrivateKey) (string, error) {
-	der, err := x509.MarshalECPrivateKey(privateKey)
+func PrivateKeyToPEMString(PrivateKey *ecdsa.PrivateKey) (string, error) {
+	der, err := x509.MarshalECPrivateKey(PrivateKey)
 	if err != nil {
 		return "", err
 	}
@@ -348,7 +348,7 @@ func privateKeyToPEMString(privateKey *ecdsa.PrivateKey) (string, error) {
 	return string(pemData), nil
 }
 
-func publicKeyToPEMString(pubKey *ecdsa.PublicKey) (string, error) {
+func PublicKeyToPEMString(pubKey *ecdsa.PublicKey) (string, error) {
 	der, err := x509.MarshalPKIXPublicKey(pubKey)
 	if err != nil {
 		return "", err
