@@ -20,7 +20,7 @@ import (
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	blockchain := chain.InitBlockchain(6, 5, 5)
+	blockchain := chain.InitBlockchain(5, 5, 5)
 	listenAddress := flag.String("address", "localhost:8080", "Address to listen on")
 	httpAddress := flag.String("http", "localhost:8090", "Address to listen on")
 	peers := flag.String("peers", "", "Comma-separated list of peers to connect to")
