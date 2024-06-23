@@ -317,20 +317,20 @@ type Wallet struct {
 }
 
 func (w *Wallet) KeyGen() {
-	PrivateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	PrivateKeyPEMStr, err := PrivateKeyToPEMString(PrivateKey)
+	privateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	privateKeyPEMStr, err := PrivateKeyToPEMString(privateKey)
 	if err != nil {
 		fmt.Println("Error converting private key to PEM:", err)
 		return
 	}
-	w.PrivateKey = PrivateKeyPEMStr
+	w.PrivateKey = privateKeyPEMStr
 
-	PublicKeyPEMStr, err := PublicKeyToPEMString(&PrivateKey.PublicKey)
+	publicKeyPEMStr, err := PublicKeyToPEMString(&privateKey.PublicKey)
 	if err != nil {
 		fmt.Println("Error converting private key to PEM:", err)
 		return
 	}
-	w.PublicKey = PublicKeyPEMStr
+	w.PublicKey = publicKeyPEMStr
 }
 
 func PrivateKeyToPEMString(PrivateKey *ecdsa.PrivateKey) (string, error) {
