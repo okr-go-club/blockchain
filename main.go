@@ -2,17 +2,75 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
 )
 
+func setCORSHeaders(w http.ResponseWriter) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+}
+
+type APIHandler struct {
+	blockchain *Blockchain
+	rwLock     *sync.RWMutex
+}
+
+func (api *APIHandler) getTransactionPool(w http.ResponseWriter, r *http.Request) {
+
+	api.rwLock.RLock()
+	transactions := api.blockchain.PendingTransactions
+	jsonTransactions, _ := json.Marshal(transactions)
+	api.rwLock.RUnlock()
+
+	setCORSHeaders(w)
+	w.Header().Set("Content-Type", "application/json")
+	_, err := w.Write(jsonTransactions)
+
+	if err != nil {
+		fmt.Println("Error during writing response:", err)
+		w.WriteHeader(http.StatusBadGateway)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func StartWebServer(server *http.Server) {
+	err := server.ListenAndServe()
+	if err != nil {
+		if !errors.Is(err, http.ErrServerClosed) {
+			panic(err)
+		}
+	}
+}
+
 func main() {
 	chain := InitBlockchain(5, 5, 5)
+	rwLock := sync.RWMutex{}
+
+	apiHandler := APIHandler{blockchain: chain, rwLock: &rwLock}
+	// Регистрируем обработчики для роутов
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /transactions/pool/", apiHandler.getTransactionPool)
+
+	server := http.Server{
+		Addr:    "localhost:8888",
+		Handler: mux,
+	}
+
+	go StartWebServer(&server)
 
 	listenAddress := flag.String("address", "localhost:8080", "Address to listen on")
 	peers := flag.String("peers", "", "Comma-separated list of peers to connect to")
