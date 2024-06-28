@@ -46,6 +46,24 @@ func (api *APIHandler) getTransactionPool(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusOK)
 }
 
+func (api *APIHandler) getBlocksPool(w http.ResponseWriter, r *http.Request) {
+	api.rwLock.RLock()
+	blocks := api.blockchain
+	jsonBlocks, _ := json.Marshal(blocks)
+	api.rwLock.RUnlock()
+
+	setCORSHeaders(w)
+	w.Header().Set("Content-Type", "application/json")
+	_, err := w.Write(jsonBlocks)
+
+	if err != nil {
+		fmt.Println("Error during writing response:", err)
+		w.WriteHeader(http.StatusBadGateway)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
 func StartWebServer(server *http.Server) {
 	err := server.ListenAndServe()
 	if err != nil {
@@ -64,6 +82,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /transactions/pool/", apiHandler.getTransactionPool)
+	mux.HandleFunc("GET /blocks/pool/", apiHandler.getBlocksPool)
 
 	server := http.Server{
 		Addr:    "localhost:8888",

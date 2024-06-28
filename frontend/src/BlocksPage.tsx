@@ -13,7 +13,7 @@ interface Blockchain {
 }
 
 async function fetchBlockchain(): Promise<Blockchain> {
-  return await axiosInstance.get("/blockchain").then((res) => res.data);
+  return await axiosInstance.get("/blocks/pool/").then((res) => res.data);
 }
 
 export default function BlocksPage() {
