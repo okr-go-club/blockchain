@@ -4,10 +4,13 @@ import (
 	"blockchain/api"
 	"blockchain/chain"
 	"blockchain/p2p"
+	"blockchain/storage"
 	"bufio"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"runtime"
@@ -18,9 +21,24 @@ import (
 	"github.com/google/uuid"
 )
 
+func PrettyPrintBlockchain(blockchain *chain.Blockchain) {
+	blockchainJSON, err := json.MarshalIndent(blockchain, "", "  ")
+	if err != nil {
+		log.Fatalf("Failed to marshal blockchain: %v", err)
+	}
+	fmt.Println(string(blockchainJSON))
+}
+
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	blockchain := chain.InitBlockchain(5, 5, 5)
+	storage, err := storage.NewBadgerStorage("./chain_storage")
+	if err != nil {
+		fmt.Println("Error")
+		fmt.Println(err)
+	}
+	defer storage.Close()
+
+	blockchain := chain.InitBlockchain(5, 5, 5, storage)
 	listenAddress := flag.String("address", "localhost:8080", "Address to listen on")
 	httpAddress := flag.String("http", "localhost:8090", "Address to listen on")
 	peers := flag.String("peers", "", "Comma-separated list of peers to connect to")
@@ -106,7 +124,13 @@ func test() {
 	fmt.Println("Successfully generate wallet keys!")
 	fmt.Print("\n\n")
 
-	blockchain := chain.InitBlockchain(5, 5, 5)
+	storage, err := storage.NewBadgerStorage("./chain_storage")
+	if err != nil {
+		panic(err)
+	}
+	defer storage.Close()
+
+	blockchain := chain.InitBlockchain(5, 5, 5, storage)
 	fmt.Println("Successfully initialized blockchain!")
 	fmt.Println("Blockchain is valid: ", blockchain.IsValid())
 	fmt.Print("\n\n")
@@ -167,4 +191,43 @@ func test() {
 	fmt.Println("Adding invalid block to the chain...")
 	blockchain.AddBlock(chain.Block{})
 	fmt.Println("Blockchain is valid: ", blockchain.IsValid())
+}
+
+func testPersistency() {
+	storage, err := storage.NewBadgerStorage("./chain_storage")
+	if err != nil {
+		fmt.Println("Error")
+		fmt.Println(err)
+	}
+	defer storage.Close()
+
+	blockchain := chain.InitBlockchain(5, 5, 5, storage)
+	fmt.Println(blockchain)
+	tx1 := chain.Transaction{
+		FromAddress:   "First",
+		ToAddress:     "Bob",
+		Amount:        5.00,
+		Timestamp:     int(time.Now().Unix()),
+		TransactionId: uuid.New().String(),
+	}
+	tx2 := chain.Transaction{
+		FromAddress:   "Second",
+		ToAddress:     "Bob",
+		Amount:        5.00,
+		Timestamp:     int(time.Now().Unix()),
+		TransactionId: uuid.New().String(),
+	}
+	blockchain.AddTransactionToPool(tx1)
+	blockchain.AddTransactionToPool(tx2)
+	blockchain.MinePendingTransactions("some_address")
+	tx3 := chain.Transaction{
+		FromAddress:   "Third",
+		ToAddress:     "Bob",
+		Amount:        5.00,
+		Timestamp:     int(time.Now().Unix()),
+		TransactionId: uuid.New().String(),
+	}
+	blockchain.AddTransactionToPool(tx3)
+	blockchain.MinePendingTransactions("another_address")
+	PrettyPrintBlockchain(blockchain)
 }

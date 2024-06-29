@@ -2,20 +2,49 @@ package storage
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"blockchain/chain"
 
 	"github.com/dgraph-io/badger/v4"
 )
 
+const (
+	blockPrefix       = "block_"
+	transactionPrefix = "tx_"
+	blockSeqKey       = "block_sequence"
+	txSeqKey          = "block_sequence"
+)
+
 func keyHasPrefix(key, prefix string) bool {
 	return len(key) >= len(prefix) && key[:len(prefix)] == prefix
 }
 
-const (
-	blockPrefix       = "block_"
-	transactionPrefix = "tx_"
-)
+func (bs *Storage) getNextSeq(txn *badger.Txn, seqKey string) (int64, error) {
+	item, err := txn.Get([]byte(seqKey))
+	if err != nil {
+		if err == badger.ErrKeyNotFound {
+			return 1, nil
+		}
+		return 0, err
+	}
+	var seq int64
+	err = item.Value(func(val []byte) error {
+		return json.Unmarshal(val, &seq)
+	})
+	if err != nil {
+		return 0, err
+	}
+	return seq + 1, nil
+}
+
+func (bs *Storage) setNextSeq(txn *badger.Txn, seqKey string, seq int64) error {
+	seqData, err := json.Marshal(seq)
+	if err != nil {
+		return err
+	}
+	return txn.Set([]byte(seqKey), seqData)
+}
 
 type Storage struct {
 	db *badger.DB
@@ -82,17 +111,23 @@ func (bs *Storage) Load(difficulty, maxBlockSize int, miningReward float64) (*ch
 
 func (bs *Storage) AddBlock(b chain.Block) error {
 	err := bs.db.Update(func(txn *badger.Txn) error {
+		seq, err := bs.getNextSeq(txn, blockSeqKey)
+		if err != nil {
+			return err
+		}
+
 		blockData, err := json.Marshal(b)
 		if err != nil {
 			return err
 		}
 
-		err = txn.Set([]byte(blockPrefix+b.Hash), blockData)
+		key := fmt.Sprintf("%s%06d_%s", blockPrefix, seq, b.Hash)
+		err = txn.Set([]byte(key), blockData)
 		if err != nil {
 			return err
 		}
 
-		return nil
+		return bs.setNextSeq(txn, blockSeqKey, seq)
 	})
 
 	return err
@@ -100,17 +135,23 @@ func (bs *Storage) AddBlock(b chain.Block) error {
 
 func (bs *Storage) AddTransaction(t chain.Transaction) error {
 	err := bs.db.Update(func(txn *badger.Txn) error {
+		seq, err := bs.getNextSeq(txn, txSeqKey)
+		if err != nil {
+			return err
+		}
+
 		txData, err := json.Marshal(t)
 		if err != nil {
 			return err
 		}
 
-		err = txn.Set([]byte(transactionPrefix+t.TransactionId), txData)
+		key := fmt.Sprintf("%s%06d_%s", transactionPrefix, seq, t.TransactionId)
+		err = txn.Set([]byte(key), txData)
 		if err != nil {
 			return err
 		}
 
-		return nil
+		return bs.setNextSeq(txn, txSeqKey, seq)
 	})
 
 	return err
