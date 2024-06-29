@@ -12,8 +12,9 @@ import (
 const (
 	blockPrefix       = "block_"
 	transactionPrefix = "tx_"
-	blockSeqKey       = "block_sequence"
-	txSeqKey          = "block_sequence"
+	seqPrefix         = "seq_"
+	blockSeqKey       = "seq_block_sequence"
+	txSeqKey          = "seq_tx_sequence"
 )
 
 func keyHasPrefix(key, prefix string) bool {
@@ -212,6 +213,10 @@ func (bs *Storage) Reset(chain *chain.Blockchain) error {
 			return err
 		}
 		err = bs.deleteByPrefix([]byte(transactionPrefix))
+		if err != nil {
+			return err
+		}
+		err = bs.deleteByPrefix([]byte(seqPrefix))
 		if err != nil {
 			return err
 		}

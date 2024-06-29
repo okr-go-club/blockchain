@@ -1,21 +1,11 @@
 package main
 
 import (
-	"blockchain/api"
 	"blockchain/chain"
-	"blockchain/p2p"
 	"blockchain/storage"
-	"bufio"
 	"encoding/json"
-	"errors"
-	"flag"
 	"fmt"
 	"log"
-	"net/http"
-	"os"
-	"runtime"
-	"strings"
-	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -30,91 +20,92 @@ func PrettyPrintBlockchain(blockchain *chain.Blockchain) {
 }
 
 func main() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
-	storage, err := storage.NewBadgerStorage("./chain_storage")
-	if err != nil {
-		fmt.Println("Error")
-		fmt.Println(err)
-	}
-	defer storage.Close()
+	testPersistency()
+	// runtime.GOMAXPROCS(runtime.NumCPU())
+	// storage, err := storage.NewBadgerStorage("./chain_storage")
+	// if err != nil {
+	// 	fmt.Println("Error")
+	// 	fmt.Println(err)
+	// }
+	// defer storage.Close()
 
-	blockchain := chain.InitBlockchain(5, 5, 5, storage)
-	listenAddress := flag.String("address", "localhost:8080", "Address to listen on")
-	httpAddress := flag.String("http", "localhost:8090", "Address to listen on")
-	peers := flag.String("peers", "", "Comma-separated list of peers to connect to")
-	flag.Parse()
+	// blockchain := chain.InitBlockchain(5, 5, 5, storage)
+	// listenAddress := flag.String("address", "localhost:8080", "Address to listen on")
+	// httpAddress := flag.String("http", "localhost:8090", "Address to listen on")
+	// peers := flag.String("peers", "", "Comma-separated list of peers to connect to")
+	// flag.Parse()
 
-	node := p2p.NewNode(*listenAddress, strings.Split(*peers, ","))
-	handler := api.Handler{
-		Blockchain:     blockchain,
-		Node:           node,
-		MiningLock:     sync.Mutex{},
-		StatusesRWLock: sync.RWMutex{},
-		MiningStatuses: make(map[uuid.UUID]api.MineStatusResponse),
-	}
-	go node.StartServer(blockchain)
+	// node := p2p.NewNode(*listenAddress, strings.Split(*peers, ","))
+	// handler := api.Handler{
+	// 	Blockchain:     blockchain,
+	// 	Node:           node,
+	// 	MiningLock:     sync.Mutex{},
+	// 	StatusesRWLock: sync.RWMutex{},
+	// 	MiningStatuses: make(map[uuid.UUID]api.MineStatusResponse),
+	// }
+	// go node.StartServer(blockchain)
 
-	for _, peer := range node.Peers {
-		if peer != "" {
-			go node.ConnectToPeer(peer, blockchain)
-		}
-	}
+	// for _, peer := range node.Peers {
+	// 	if peer != "" {
+	// 		go node.ConnectToPeer(peer, blockchain)
+	// 	}
+	// }
 
-	mux := http.NewServeMux()
+	// mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /blockchain/mine", handler.MineBlock)
+	// mux.HandleFunc("GET /blockchain/mine", handler.MineBlock)
 
-	mux.HandleFunc("GET /blockchain/mine/{id}/status", handler.GetMiningStatus)
+	// mux.HandleFunc("GET /blockchain/mine/{id}/status", handler.GetMiningStatus)
 
-	server := http.Server{
-		Addr:    *httpAddress,
-		Handler: api.SetCORSHeaders(mux),
-	}
+	// server := http.Server{
+	// 	Addr:    *httpAddress,
+	// 	Handler: api.SetCORSHeaders(mux),
+	// }
 
-	go func() {
-		err := server.ListenAndServe()
-		if err != nil {
-			if !errors.Is(err, http.ErrServerClosed) {
-				panic(err)
-			}
-		}
-	}()
+	// go func() {
+	// 	err := server.ListenAndServe()
+	// 	if err != nil {
+	// 		if !errors.Is(err, http.ErrServerClosed) {
+	// 			panic(err)
+	// 		}
+	// 	}
+	// }()
 
-	go func() {
-		stdReader := bufio.NewReader(os.Stdin)
-		for {
-			fmt.Print("Enter message to broadcast (transaction/block): ")
-			msg, err := stdReader.ReadString('\n')
-			if err != nil {
-				fmt.Println("Error reading from stdin:", err)
-				return
-			}
-			msg = strings.TrimSpace(msg)
-			switch msg {
-			case "transaction":
-				tx := chain.Transaction{
-					FromAddress:   "Alice",
-					ToAddress:     "Bob",
-					Amount:        5.00,
-					Timestamp:     int(time.Now().Unix()),
-					TransactionId: uuid.New().String(),
-				}
-				node.BroadcastTransaction(tx)
-			case "block":
-				block := chain.Block{
-					Transactions: nil,
-					Timestamp:    time.Now().Unix(),
-					Capacity:     5,
-					PreviousHash: "previousHash",
-				}
-				node.BroadcastBlock(block)
-			default:
-				fmt.Println("Unknown message type")
-			}
-		}
-	}()
+	// go func() {
+	// 	stdReader := bufio.NewReader(os.Stdin)
+	// 	for {
+	// 		fmt.Print("Enter message to broadcast (transaction/block): ")
+	// 		msg, err := stdReader.ReadString('\n')
+	// 		if err != nil {
+	// 			fmt.Println("Error reading from stdin:", err)
+	// 			return
+	// 		}
+	// 		msg = strings.TrimSpace(msg)
+	// 		switch msg {
+	// 		case "transaction":
+	// 			tx := chain.Transaction{
+	// 				FromAddress:   "Alice",
+	// 				ToAddress:     "Bob",
+	// 				Amount:        5.00,
+	// 				Timestamp:     int(time.Now().Unix()),
+	// 				TransactionId: uuid.New().String(),
+	// 			}
+	// 			node.BroadcastTransaction(tx)
+	// 		case "block":
+	// 			block := chain.Block{
+	// 				Transactions: nil,
+	// 				Timestamp:    time.Now().Unix(),
+	// 				Capacity:     5,
+	// 				PreviousHash: "previousHash",
+	// 			}
+	// 			node.BroadcastBlock(block)
+	// 		default:
+	// 			fmt.Println("Unknown message type")
+	// 		}
+	// 	}
+	// }()
 
-	select {}
+	// select {}
 }
 
 //nolint:all
@@ -230,4 +221,24 @@ func testPersistency() {
 	blockchain.AddTransactionToPool(tx3)
 	blockchain.MinePendingTransactions("another_address")
 	PrettyPrintBlockchain(blockchain)
+
+	newChain := chain.Blockchain{Difficulty: 5, MaxBlockSize: 5, MiningReward: 5, Storage: storage}
+	genesisBlock := chain.Block{
+		Timestamp: time.Now().Unix(),
+	}
+	genesisBlock.MineBlock(blockchain.Difficulty)
+	newChain.AddBlock(genesisBlock)
+	newChain.Storage.AddBlock(genesisBlock)
+	tx4 := chain.Transaction{
+		FromAddress:   "NEW ONE",
+		ToAddress:     "Bob",
+		Amount:        5.00,
+		Timestamp:     int(time.Now().Unix()),
+		TransactionId: uuid.New().String(),
+	}
+	newChain.AddTransactionToPool(tx4)
+	newChain.MinePendingTransactions("NEW CHAIN ADDR")
+	storage.Reset(&newChain)
+	chain := chain.InitBlockchain(5, 5, 5, storage)
+	PrettyPrintBlockchain(chain)
 }
