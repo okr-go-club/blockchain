@@ -174,7 +174,7 @@ func (storage *Storage) deleteByPrefix(prefix []byte) error {
 	}
 
 	collectSize := 100000
-	storage.db.View(func(txn *badger.Txn) error {
+	storage.db.View(func(txn *badger.Txn) error { //nolint:all
 		opts := badger.DefaultIteratorOptions
 		opts.AllVersions = false
 		opts.PrefetchValues = false

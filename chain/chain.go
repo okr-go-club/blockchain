@@ -229,9 +229,13 @@ func (chain *Blockchain) AddBlock(block Block) {
 	chain.Blocks = append(chain.Blocks, block)
 }
 
-func (chain *Blockchain) AddTransactionToPool(t Transaction) {
+func (chain *Blockchain) AddTransactionToPool(t Transaction) error {
 	chain.PendingTransactions = append(chain.PendingTransactions, t)
-	chain.Storage.AddTransaction(t)
+	err := chain.Storage.AddTransaction(t)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (chain *Blockchain) GetBalance(address string) float64 {
@@ -269,7 +273,7 @@ func (chain *Blockchain) IsValid() bool {
 	return true
 }
 
-func (chain *Blockchain) MinePendingTransactions(minerAddress string) {
+func (chain *Blockchain) MinePendingTransactions(minerAddress string) error {
 	currentPoolSize := len(chain.PendingTransactions)
 	var transactions []Transaction
 
@@ -300,7 +304,11 @@ func (chain *Blockchain) MinePendingTransactions(minerAddress string) {
 
 	block.MineBlock(chain.Difficulty)
 	chain.AddBlock(block)
-	chain.Storage.AddBlock(block)
+	err := chain.Storage.AddBlock(block)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 type Storage interface {
@@ -320,7 +328,10 @@ func InitBlockchain(difficulty, maxBlockSize int, miningReward float64, s Storag
 		}
 		genesisBlock.MineBlock(blockchain.Difficulty)
 		blockchain.AddBlock(genesisBlock)
-		blockchain.Storage.AddBlock(genesisBlock)
+		err := blockchain.Storage.AddBlock(genesisBlock)
+		if err != nil {
+			panic(err)
+		}
 		return &blockchain
 	}
 	fmt.Println("Got blockchain from storage!")

@@ -5,9 +5,10 @@ import (
 	"blockchain/p2p"
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
 	"net/http"
 	"sync"
+
+	"github.com/google/uuid"
 )
 
 func SetCORSHeaders(next http.Handler) http.Handler {
@@ -69,7 +70,15 @@ func (h *Handler) MineBlock(w http.ResponseWriter, r *http.Request) {
 		h.StatusesRWLock.Lock()
 		h.MiningStatuses[id] = MineStatusResponse{Status: StatusPending}
 		h.StatusesRWLock.Unlock()
-		h.Blockchain.MinePendingTransactions("")
+		err := h.Blockchain.MinePendingTransactions("")
+		if err != nil {
+			h.StatusesRWLock.Lock()
+			h.MiningStatuses[id] = MineStatusResponse{
+				Status:  StatusFailed,
+				Details: fmt.Sprintf("Error: %v", err),
+			}
+			h.StatusesRWLock.Unlock()
+		}
 		h.StatusesRWLock.Lock()
 		h.MiningStatuses[id] = MineStatusResponse{Status: StatusSuccessful}
 		h.StatusesRWLock.Unlock()

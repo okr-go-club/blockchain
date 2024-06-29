@@ -184,6 +184,7 @@ func test() {
 	fmt.Println("Blockchain is valid: ", blockchain.IsValid())
 }
 
+//nolint:all
 func testPersistency() {
 	storage, err := storage.NewBadgerStorage("./chain_storage")
 	if err != nil {

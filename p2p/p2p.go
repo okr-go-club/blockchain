@@ -68,7 +68,10 @@ func ProcessMessage(message string, blockchain *chain.Blockchain) error {
 				return err
 			} else {
 				fmt.Println("Received transaction:", tx)
-				blockchain.AddTransactionToPool(tx)
+				err := blockchain.AddTransactionToPool(tx)
+				if err != nil {
+					return err
+				}
 				fmt.Println("Transaction pool:", blockchain.PendingTransactions)
 			}
 		case "block":
