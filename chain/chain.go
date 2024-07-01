@@ -215,11 +215,11 @@ func NewTransaction(PrivateKey, fromAddress, toAddress string, amount float64) (
 }
 
 type Blockchain struct {
-	Blocks              []Block
+	Blocks              []Block `json:"blocks"`
 	PendingTransactions []Transaction
 	Difficulty          int
-	MaxBlockSize        int
-	MiningReward        float64
+	MaxBlockSize        int     `json:"maxBlockSize"`
+	MiningReward        float64 `json:"miningReward"`
 }
 
 func (chain *Blockchain) AddBlock(block Block) {
