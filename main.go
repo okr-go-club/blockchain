@@ -12,7 +12,6 @@ import (
 	"os"
 	"runtime"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -28,12 +27,9 @@ func main() {
 
 	node := p2p.NewNode(*listenAddress, strings.Split(*peers, ","))
 	handler := api.Handler{
-		Blockchain:       blockchain,
-		Node:             node,
-		BlockchainRWLock: sync.RWMutex{},
-		MiningLock:       sync.Mutex{},
-		StatusesRWLock:   sync.RWMutex{},
-		MiningStatuses:   make(map[uuid.UUID]api.MineStatusResponse),
+		Blockchain:     blockchain,
+		Node:           node,
+		MiningStatuses: make(map[uuid.UUID]api.MineStatusResponse),
 	}
 	go node.StartServer(blockchain)
 
