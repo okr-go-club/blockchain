@@ -7,9 +7,9 @@ Educational project for learning golang and blockchain technology
 
 ### Run
 ```shell
-go run main.go p2p.go chain.go -address localhost:8080
+go run main.go -address localhost:8080 -http localhost:8090
 
-go run main.go p2p.go chain.go -address localhost:8081 -peers localhost:8080
+go run main.go -address localhost:8081 -peers localhost:8080 -http localhost:8091
 
-go run main.go p2p.go chain.go -address localhost:8082 -peers localhost:8080,localhost:8081
+go run main.go -address localhost:8082 -peers localhost:8080,localhost:8081 -http localhost:8092
 ```

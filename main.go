@@ -1,109 +1,67 @@
 package main
 
 import (
+	"blockchain/api"
+	"blockchain/chain"
+	"blockchain/p2p"
 	"bufio"
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"net/http"
 	"os"
+	"runtime"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/google/uuid"
 )
 
-func setCORSHeaders(w http.ResponseWriter) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-	w.Header().Set("Access-Control-Allow-Credentials", "true")
-}
-
-type APIHandler struct {
-	blockchain *Blockchain
-	rwLock     *sync.RWMutex
-}
-
-func (api *APIHandler) getTransactionPool(w http.ResponseWriter, r *http.Request) {
-
-	api.rwLock.RLock()
-	transactions := api.blockchain.PendingTransactions
-	jsonTransactions, _ := json.Marshal(transactions)
-	api.rwLock.RUnlock()
-
-	setCORSHeaders(w)
-	w.Header().Set("Content-Type", "application/json")
-	_, err := w.Write(jsonTransactions)
-
-	if err != nil {
-		fmt.Println("Error during writing response:", err)
-		w.WriteHeader(http.StatusBadGateway)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-}
-
-func (api *APIHandler) getBlocksPool(w http.ResponseWriter, r *http.Request) {
-	api.rwLock.RLock()
-	blocks := api.blockchain
-	jsonBlocks, _ := json.Marshal(blocks)
-	api.rwLock.RUnlock()
-
-	setCORSHeaders(w)
-	w.Header().Set("Content-Type", "application/json")
-	_, err := w.Write(jsonBlocks)
-
-	if err != nil {
-		fmt.Println("Error during writing response:", err)
-		w.WriteHeader(http.StatusBadGateway)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-}
-
-func StartWebServer(server *http.Server) {
-	err := server.ListenAndServe()
-	if err != nil {
-		if !errors.Is(err, http.ErrServerClosed) {
-			panic(err)
-		}
-	}
-}
-
 func main() {
-	chain := InitBlockchain(5, 5, 5)
-	rwLock := sync.RWMutex{}
-
-	apiHandler := APIHandler{blockchain: chain, rwLock: &rwLock}
-	// Регистрируем обработчики для роутов
-
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /transactions/pool/", apiHandler.getTransactionPool)
-	mux.HandleFunc("GET /blocks/pool/", apiHandler.getBlocksPool)
-
-	server := http.Server{
-		Addr:    "localhost:8888",
-		Handler: mux,
-	}
-
-	go StartWebServer(&server)
-
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	blockchain := chain.InitBlockchain(5, 5, 5)
 	listenAddress := flag.String("address", "localhost:8080", "Address to listen on")
+	httpAddress := flag.String("http", "localhost:8090", "Address to listen on")
 	peers := flag.String("peers", "", "Comma-separated list of peers to connect to")
 	flag.Parse()
 
-	node := NewNode(*listenAddress, strings.Split(*peers, ","))
-
-	go node.StartServer(chain)
+	node := p2p.NewNode(*listenAddress, strings.Split(*peers, ","))
+	handler := api.Handler{
+		Blockchain:     blockchain,
+		Node:           node,
+		MiningStatuses: make(map[uuid.UUID]api.MineStatusResponse),
+	}
+	go node.StartServer(blockchain)
 
 	for _, peer := range node.Peers {
 		if peer != "" {
-			go node.ConnectToPeer(peer, chain)
+			go node.ConnectToPeer(peer, blockchain)
 		}
 	}
+
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("POST /blockchain/mine", handler.MineBlock)
+
+	mux.HandleFunc("GET /blockchain/mine/{id}/status", handler.GetMiningStatus)
+
+	mux.HandleFunc("GET /transactions/pool/", handler.GetTransactionPool)
+
+	mux.HandleFunc("GET /blocks/pool/", handler.GetBlocksPool)
+
+	server := http.Server{
+		Addr:    *httpAddress,
+		Handler: api.SetCORSHeaders(mux),
+	}
+
+	go func() {
+		err := server.ListenAndServe()
+		if err != nil {
+			if !errors.Is(err, http.ErrServerClosed) {
+				panic(err)
+			}
+		}
+	}()
 
 	go func() {
 		stdReader := bufio.NewReader(os.Stdin)
@@ -117,7 +75,7 @@ func main() {
 			msg = strings.TrimSpace(msg)
 			switch msg {
 			case "transaction":
-				tx := Transaction{
+				tx := chain.Transaction{
 					FromAddress:   "Alice",
 					ToAddress:     "Bob",
 					Amount:        5.00,
@@ -126,7 +84,7 @@ func main() {
 				}
 				node.BroadcastTransaction(tx)
 			case "block":
-				block := Block{
+				block := chain.Block{
 					Transactions: nil,
 					Timestamp:    time.Now().Unix(),
 					Capacity:     5,
@@ -144,70 +102,70 @@ func main() {
 
 //nolint:all
 func test() {
-	w := new(Wallet)
+	w := new(chain.Wallet)
 	w.KeyGen()
 	fmt.Println("Successfully generate wallet keys!")
 	fmt.Print("\n\n")
 
-	chain := InitBlockchain(5, 5, 5)
+	blockchain := chain.InitBlockchain(5, 5, 5)
 	fmt.Println("Successfully initialized blockchain!")
-	fmt.Println("Blockchain is valid: ", chain.IsValid())
+	fmt.Println("Blockchain is valid: ", blockchain.IsValid())
 	fmt.Print("\n\n")
 
-	fmt.Println("Balance of 0x123 before mining:", chain.GetBalance("0x123"))
+	fmt.Println("Balance of 0x123 before mining:", blockchain.GetBalance("0x123"))
 	fmt.Println("Adding transactions to the pool...")
 
-	t1, err := NewTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
+	t1, err := chain.NewTransaction(w.PrivateKey, w.PublicKey, "0x123", 5.0)
 	if err != nil {
 		fmt.Println("Error creating transaction:", err)
 		return
 	}
-	chain.AddTransactionToPool(t1)
+	blockchain.AddTransactionToPool(t1)
 
-	t2, err := NewTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
+	t2, err := chain.NewTransaction(w.PrivateKey, w.PublicKey, "0x123", 5.0)
 	if err != nil {
 		fmt.Println("Error creating transaction:", err)
 		return
 	}
-	chain.AddTransactionToPool(t2)
+	blockchain.AddTransactionToPool(t2)
 
-	t3, err := NewTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
+	t3, err := chain.NewTransaction(w.PrivateKey, w.PublicKey, "0x123", 5.0)
 	if err != nil {
 		fmt.Println("Error creating transaction:", err)
 		return
 	}
-	chain.AddTransactionToPool(t3)
+	blockchain.AddTransactionToPool(t3)
 
-	t4, err := NewTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
+	t4, err := chain.NewTransaction(w.PrivateKey, w.PublicKey, "0x123", 5.0)
 	if err != nil {
 		fmt.Println("Error creating transaction:", err)
 		return
 	}
-	chain.AddTransactionToPool(t4)
+	blockchain.AddTransactionToPool(t4)
 
-	t5, err := NewTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
+	t5, err := chain.NewTransaction(w.PrivateKey, w.PublicKey, "0x123", 5.0)
 	if err != nil {
 		fmt.Println("Error creating transaction:", err)
 		return
 	}
-	chain.AddTransactionToPool(t5)
+	blockchain.AddTransactionToPool(t5)
 
-	fmt.Println("Length of pending transactions:", len(chain.PendingTransactions))
+	fmt.Println("Length of pending transactions:", len(blockchain.PendingTransactions))
 	fmt.Print("\n\n")
 
 	fmt.Println("Mining...")
-	chain.MinePendingTransactions("0x123")
+	blockchain.MinePendingTransactions("0x123")
 	fmt.Println("Mining successful. New block added to the chain!")
-	fmt.Println("Blockchain is valid: ", chain.IsValid())
+	fmt.Println("Blockchain is valid: ", blockchain.IsValid())
 	fmt.Print("\n\n")
 
-	fmt.Println("Balance of 0x123 after mining:", chain.GetBalance("0x123"))
+	fmt.Println("Balance of 0x123 after mining:", blockchain.GetBalance("0x123"))
 	fmt.Print("\n\n")
 
-	fmt.Println("Length of pending transactions after mining:", len(chain.PendingTransactions))
+	fmt.Println("Length of pending transactions after mining:", len(blockchain.PendingTransactions))
 	fmt.Print("\n\n")
 
 	fmt.Println("Adding invalid block to the chain...")
-	chain.AddBlock(Block{})
-	fmt.Println("Blockchain is valid: ", chain.IsValid())
+	blockchain.AddBlock(chain.Block{})
+	fmt.Println("Blockchain is valid: ", blockchain.IsValid())
 }

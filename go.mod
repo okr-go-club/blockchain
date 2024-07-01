@@ -1,4 +1,4 @@
-module github.com/okr-go-club/blockchain
+module blockchain
 
 go 1.22.2
 

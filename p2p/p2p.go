@@ -1,6 +1,7 @@
-package main
+package p2p
 
 import (
+	"blockchain/chain"
 	"bufio"
 	"encoding/json"
 	"fmt"
@@ -25,13 +26,18 @@ func NewNode(address string, peers []string) *Node {
 	}
 }
 
-func (node *Node) StartServer(chain *Blockchain) {
+func (node *Node) StartServer(blockchain *chain.Blockchain) {
 	listener, err := net.Listen("tcp", node.Address)
 	if err != nil {
 		fmt.Println("Error starting server:", err)
 		os.Exit(1)
 	}
-	defer listener.Close()
+	defer func() {
+		err := listener.Close()
+		if err != nil {
+			fmt.Println("Error closing listener:", err)
+		}
+	}()
 
 	fmt.Println("Server started on", node.Address)
 	for {
@@ -40,11 +46,11 @@ func (node *Node) StartServer(chain *Blockchain) {
 			fmt.Println("Error accepting connection:", err)
 			continue
 		}
-		go node.HandleConnection(conn, chain)
+		go node.HandleConnection(conn, blockchain)
 	}
 }
 
-func ProcessMessage(message string, chain *Blockchain) error {
+func ProcessMessage(message string, blockchain *chain.Blockchain) error {
 	var msgMap map[string]interface{}
 	err := json.Unmarshal([]byte(message), &msgMap)
 	if err != nil {
@@ -55,26 +61,26 @@ func ProcessMessage(message string, chain *Blockchain) error {
 	if msgType, ok := msgMap["type"]; ok {
 		switch msgType {
 		case "transaction":
-			var tx Transaction
+			var tx chain.Transaction
 			err = json.Unmarshal([]byte(message), &tx)
 			if err != nil {
 				fmt.Println("Error unmarshalling transaction:", err)
 				return err
 			} else {
 				fmt.Println("Received transaction:", tx)
-				chain.AddTransactionToPool(tx)
-				fmt.Println("Transaction pool:", chain.PendingTransactions)
+				blockchain.AddTransactionToPool(tx)
+				fmt.Println("Transaction pool:", blockchain.PendingTransactions)
 			}
 		case "block":
-			var block Block
+			var block chain.Block
 			err = json.Unmarshal([]byte(message), &block)
 			if err != nil {
 				fmt.Println("Error unmarshalling block:", err)
 				return err
 			} else {
 				fmt.Println("Received block:", block)
-				chain.AddBlock(block)
-				fmt.Println("Blocks:", chain.Blocks)
+				blockchain.AddBlock(block)
+				fmt.Println("Blocks:", blockchain.Blocks)
 			}
 		default:
 			fmt.Println("Unknown message type")
@@ -86,8 +92,13 @@ func ProcessMessage(message string, chain *Blockchain) error {
 	return nil
 }
 
-func (node *Node) HandleConnection(conn net.Conn, chain *Blockchain) {
-	defer conn.Close()
+func (node *Node) HandleConnection(conn net.Conn, blockchain *chain.Blockchain) {
+	defer func() {
+		err := conn.Close()
+		if err != nil {
+			fmt.Println("Error closing connection:", err)
+		}
+	}()
 	reader := bufio.NewReader(conn)
 
 	// Read initial hello message
@@ -131,7 +142,7 @@ func (node *Node) HandleConnection(conn net.Conn, chain *Blockchain) {
 		}
 		fmt.Println("Received Message:", message)
 
-		err = ProcessMessage(message, chain)
+		err = ProcessMessage(message, blockchain)
 		if err != nil {
 			fmt.Println("Error processing message:", err)
 			return
@@ -139,7 +150,7 @@ func (node *Node) HandleConnection(conn net.Conn, chain *Blockchain) {
 	}
 }
 
-func (node *Node) ConnectToPeer(address string, chain *Blockchain) {
+func (node *Node) ConnectToPeer(address string, blockchain *chain.Blockchain) {
 	conn, err := net.Dial("tcp", address)
 	if err != nil {
 		fmt.Println("Error connecting to peer:", err)
@@ -166,7 +177,7 @@ func (node *Node) ConnectToPeer(address string, chain *Blockchain) {
 	node.AddConnection(address, conn)
 	fmt.Println("Connected to peer:", address)
 
-	go node.ReadData(conn, chain)
+	go node.ReadData(conn, blockchain)
 }
 
 func (node *Node) AddConnection(peerAddress string, conn net.Conn) {
@@ -198,7 +209,7 @@ func (node *Node) RemoveConnection(peerAddress string) {
 	}
 }
 
-func (node *Node) ReadData(conn net.Conn, chain *Blockchain) {
+func (node *Node) ReadData(conn net.Conn, blockchain *chain.Blockchain) {
 	reader := bufio.NewReader(conn)
 	for {
 		message, err := reader.ReadString('\n')
@@ -208,7 +219,7 @@ func (node *Node) ReadData(conn net.Conn, chain *Blockchain) {
 			return
 		}
 		fmt.Println("Received in ReadData:", message)
-		err = ProcessMessage(message, chain)
+		err = ProcessMessage(message, blockchain)
 		if err != nil {
 			fmt.Println("Error processing message:", err)
 			return
@@ -228,10 +239,10 @@ func (node *Node) BroadcastMessage(message string) {
 	}
 }
 
-func (node *Node) BroadcastTransaction(tx Transaction) {
+func (node *Node) BroadcastTransaction(tx chain.Transaction) {
 	txJson, err := json.Marshal(struct {
-		Type        string      `json:"type"`
-		Transaction Transaction `json:"transaction"`
+		Type        string            `json:"type"`
+		Transaction chain.Transaction `json:"transaction"`
 	}{"transaction", tx})
 	if err != nil {
 		fmt.Println("Error marshalling transaction:", err)
@@ -240,10 +251,10 @@ func (node *Node) BroadcastTransaction(tx Transaction) {
 	node.BroadcastMessage(string(txJson))
 }
 
-func (node *Node) BroadcastBlock(block Block) {
+func (node *Node) BroadcastBlock(block chain.Block) {
 	blockJson, err := json.Marshal(struct {
-		Type  string `json:"type"`
-		Block Block  `json:"block"`
+		Type  string      `json:"type"`
+		Block chain.Block `json:"block"`
 	}{"block", block})
 	if err != nil {
 		fmt.Println("Error marshalling block:", err)
