@@ -23,3 +23,4 @@ go.work
 
 node_modules/
 .DS_Store
+chain_storage/

@@ -2,7 +2,6 @@ package chain
 
 import (
 	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/x509"
@@ -217,9 +216,10 @@ func NewTransaction(PrivateKey, fromAddress, toAddress string, amount float64) (
 type Blockchain struct {
 	Blocks              []Block `json:"blocks"`
 	PendingTransactions []Transaction
-	Difficulty          int
+	Difficulty          int     `json:"difficulty"`
 	MaxBlockSize        int     `json:"maxBlockSize"`
 	MiningReward        float64 `json:"miningReward"`
+	Storage             Storage
 }
 
 func (chain *Blockchain) AddBlock(block Block) {
@@ -229,8 +229,13 @@ func (chain *Blockchain) AddBlock(block Block) {
 	chain.Blocks = append(chain.Blocks, block)
 }
 
-func (chain *Blockchain) AddTransactionToPool(t Transaction) {
+func (chain *Blockchain) AddTransactionToPool(t Transaction) error {
 	chain.PendingTransactions = append(chain.PendingTransactions, t)
+	err := chain.Storage.AddTransaction(t)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (chain *Blockchain) GetBalance(address string) float64 {
@@ -268,7 +273,7 @@ func (chain *Blockchain) IsValid() bool {
 	return true
 }
 
-func (chain *Blockchain) MinePendingTransactions(minerAddress string) {
+func (chain *Blockchain) MinePendingTransactions(minerAddress string) error {
 	currentPoolSize := len(chain.PendingTransactions)
 	var transactions []Transaction
 
@@ -299,66 +304,36 @@ func (chain *Blockchain) MinePendingTransactions(minerAddress string) {
 
 	block.MineBlock(chain.Difficulty)
 	chain.AddBlock(block)
-}
-
-func InitBlockchain(difficulty, maxBlockSize int, miningReward float64) *Blockchain {
-	blockchain := Blockchain{Difficulty: difficulty, MaxBlockSize: maxBlockSize, MiningReward: miningReward}
-	genesisBlock := Block{
-		Timestamp: time.Now().Unix(),
-	}
-	genesisBlock.MineBlock(blockchain.Difficulty)
-	blockchain.AddBlock(genesisBlock)
-	return &blockchain
-}
-
-type Wallet struct {
-	PrivateKey string
-	PublicKey  string
-}
-
-func (w *Wallet) KeyGen() {
-	privateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	privateKeyPEMStr, err := PrivateKeyToPEMString(privateKey)
+	err := chain.Storage.AddBlock(block)
 	if err != nil {
-		fmt.Println("Error converting private key to PEM:", err)
-		return
+		return err
 	}
-	w.PrivateKey = privateKeyPEMStr
-
-	publicKeyPEMStr, err := PublicKeyToPEMString(&privateKey.PublicKey)
-	if err != nil {
-		fmt.Println("Error converting private key to PEM:", err)
-		return
-	}
-	w.PublicKey = publicKeyPEMStr
+	return nil
 }
 
-func PrivateKeyToPEMString(PrivateKey *ecdsa.PrivateKey) (string, error) {
-	der, err := x509.MarshalECPrivateKey(PrivateKey)
-	if err != nil {
-		return "", err
-	}
-
-	pemBlock := &pem.Block{
-		Type:  "EC PRIVATE KEY",
-		Bytes: der,
-	}
-	pemData := pem.EncodeToMemory(pemBlock)
-
-	return string(pemData), nil
+type Storage interface {
+	Load(difficulty, maxBlockSize int, miningReward float64) (*Blockchain, error)
+	AddBlock(b Block) error
+	AddTransaction(t Transaction) error
+	Reset(chain *Blockchain) error
 }
 
-func PublicKeyToPEMString(pubKey *ecdsa.PublicKey) (string, error) {
-	der, err := x509.MarshalPKIXPublicKey(pubKey)
-	if err != nil {
-		return "", err
+func InitBlockchain(difficulty, maxBlockSize int, miningReward float64, s Storage) *Blockchain {
+	blockchain, err := s.Load(difficulty, maxBlockSize, miningReward)
+	if err != nil || len(blockchain.Blocks) == 0 {
+		fmt.Println("Could not load blockchain from storage. Creating a new one!")
+		blockchain := Blockchain{Difficulty: difficulty, MaxBlockSize: maxBlockSize, MiningReward: miningReward, Storage: s}
+		genesisBlock := Block{
+			Timestamp: time.Now().Unix(),
+		}
+		genesisBlock.MineBlock(blockchain.Difficulty)
+		blockchain.AddBlock(genesisBlock)
+		err := blockchain.Storage.AddBlock(genesisBlock)
+		if err != nil {
+			panic(err)
+		}
+		return &blockchain
 	}
-
-	pemBlock := &pem.Block{
-		Type:  "PUBLIC KEY",
-		Bytes: der,
-	}
-	pemData := pem.EncodeToMemory(pemBlock)
-
-	return string(pemData), nil
+	fmt.Println("Got blockchain from storage!")
+	return blockchain
 }
