@@ -15,7 +15,6 @@ import (
 	"os"
 	"runtime"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -48,8 +47,6 @@ func main() {
 	handler := api.Handler{
 		Blockchain:     blockchain,
 		Node:           node,
-		MiningLock:     sync.Mutex{},
-		StatusesRWLock: sync.RWMutex{},
 		MiningStatuses: make(map[uuid.UUID]api.MineStatusResponse),
 	}
 	go node.StartServer(blockchain)
@@ -62,9 +59,13 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /blockchain/mine", handler.MineBlock)
+	mux.HandleFunc("POST /blockchain/mine", handler.MineBlock)
 
 	mux.HandleFunc("GET /blockchain/mine/{id}/status", handler.GetMiningStatus)
+
+	mux.HandleFunc("GET /transactions/pool/", handler.GetTransactionPool)
+
+	mux.HandleFunc("GET /blocks/pool/", handler.GetBlocksPool)
 
 	server := http.Server{
 		Addr:    *httpAddress,

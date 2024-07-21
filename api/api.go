@@ -22,11 +22,12 @@ func SetCORSHeaders(next http.Handler) http.Handler {
 }
 
 type Handler struct {
-	Blockchain     *chain.Blockchain
-	Node           *p2p.Node
-	MiningLock     sync.Mutex
-	StatusesRWLock sync.RWMutex
-	MiningStatuses map[uuid.UUID]MineStatusResponse
+	Blockchain       *chain.Blockchain
+	Node             *p2p.Node
+	BlockchainRWLock sync.RWMutex
+	MiningLock       sync.Mutex
+	StatusesRWLock   sync.RWMutex
+	MiningStatuses   map[uuid.UUID]MineStatusResponse
 }
 
 type MineResponse struct {
@@ -111,5 +112,38 @@ func (h *Handler) GetMiningStatus(w http.ResponseWriter, r *http.Request) {
 	err = json.NewEncoder(w).Encode(status)
 	if err != nil {
 		fmt.Println("Error while handle request", err)
+	}
+}
+
+func (h *Handler) GetTransactionPool(w http.ResponseWriter, r *http.Request) {
+
+	h.BlockchainRWLock.RLock()
+	transactions := h.Blockchain.PendingTransactions
+	jsonTransactions, _ := json.Marshal(transactions)
+	h.BlockchainRWLock.RUnlock()
+
+	w.Header().Set("Content-Type", "application/json")
+	_, err := w.Write(jsonTransactions)
+
+	if err != nil {
+		fmt.Println("Error during writing response:", err)
+		w.WriteHeader(http.StatusBadGateway)
+		return
+	}
+}
+
+func (h *Handler) GetBlocksPool(w http.ResponseWriter, r *http.Request) {
+	h.BlockchainRWLock.RLock()
+	blocks := h.Blockchain
+	jsonBlocks, _ := json.Marshal(blocks)
+	h.BlockchainRWLock.RUnlock()
+
+	w.Header().Set("Content-Type", "application/json")
+	_, err := w.Write(jsonBlocks)
+
+	if err != nil {
+		fmt.Println("Error during writing response:", err)
+		w.WriteHeader(http.StatusBadGateway)
+		return
 	}
 }

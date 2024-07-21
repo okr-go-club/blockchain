@@ -20,6 +20,7 @@ export interface BlockProps {
     nonce: number;
     hash: string;
     transactions: TransactionProps[];
+    capacity: number;
 }
 
 export interface BlocksTableProps {
@@ -39,10 +40,12 @@ export default function BlocksTable({ blocks }: BlocksTableProps) {
         { name: 'Nonce', key: 'nonce', isNumeric: true },
         { name: 'Hash', key: 'hash', isNumeric: false },
         { name: 'Transactions', key: 'transactions', isNumeric: false },
+        { name: 'Capacity', key: 'capacity', isNumeric: true },
     ]
 
     function renderCellData(column: Column, row: BlockProps) {
         if (column.key === 'transactions') {
+            if (!row[column.key]) return <>There is no transactions yet.</>
             return <TransactionsModalButton caption={'Transactions'} transactions={row[column.key]} />;
         } else if (column.key === 'hash' || column.key === 'previousHash') {
             return (

@@ -8,7 +8,7 @@ import CenteredSpinner from "./CenteredSpinner";
 import axiosInstance from "./axiosConfig";
 
 async function fetchTransactions(): Promise<TransactionProps[]> {
-  return await axiosInstance.get("/transactions").then((res) => res.data);
+  return await axiosInstance.get("/transactions/pool/").then((res) => res.data);
 }
 
 export default function TransactionsPage({ caption }: { caption: string }) {
@@ -17,6 +17,7 @@ export default function TransactionsPage({ caption }: { caption: string }) {
     queryFn: fetchTransactions,
   });
 
+  if (!data || !data.length) return <>There is no transactions yet.</>
   if (isPending) return <CenteredSpinner />;
   if (error) return <ErrorAlert message={error.toString()} />;
 
