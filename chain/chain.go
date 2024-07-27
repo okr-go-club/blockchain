@@ -186,7 +186,7 @@ func (t *Transaction) verifySignature() (bool, error) {
 	}
 
 	hashed := sha256.Sum256(hash)
-	valid := ecdsa.Verify(PublicKey, hashed[:], sigStruct.R, sigStruct.S)
+	valid := ecdsa.VerifyASN1(PublicKey, hashed[:], signatureBytes)
 	if !valid {
 		return false, errors.New("signature verification failed")
 	}
