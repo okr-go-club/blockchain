@@ -39,6 +39,13 @@ type MineStatusResponse struct {
 	Details string `json:"details,omitempty"`
 }
 
+type AddTransactionRequest struct {
+	PrivateKey string  `json:"privateKey"`
+	From       string  `json:"from"`
+	To         string  `json:"to"`
+	Amount     float64 `json:"amount,string"`
+}
+
 const (
 	StatusPending    = "pending"
 	StatusSuccessful = "successful"
@@ -116,7 +123,6 @@ func (h *Handler) GetMiningStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetTransactionPool(w http.ResponseWriter, r *http.Request) {
-
 	h.BlockchainRWLock.RLock()
 	transactions := h.Blockchain.PendingTransactions
 	jsonTransactions, _ := json.Marshal(transactions)
@@ -130,6 +136,36 @@ func (h *Handler) GetTransactionPool(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadGateway)
 		return
 	}
+}
+
+func (h *Handler) PostTransaction(w http.ResponseWriter, r *http.Request) {
+	var request AddTransactionRequest
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		fmt.Println("Error while handle request", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	privateKey := "-----BEGIN EC PRIVATE KEY-----\n" + request.PrivateKey + "\n-----END EC PRIVATE KEY-----"
+
+	transaction, err := chain.NewTransaction(privateKey, request.From, request.To, request.Amount)
+	if err != nil {
+		fmt.Println("Error while create transaction", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	h.BlockchainRWLock.RLock()
+	err = h.Blockchain.AddTransactionToPool(transaction)
+	h.BlockchainRWLock.RUnlock()
+	if err != nil {
+		fmt.Println("Error while add transaction to pool", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	h.Node.Mutex.Lock()
+	go h.Node.BroadcastTransaction(transaction)
+	h.Node.Mutex.Unlock()
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *Handler) GetBlocksPool(w http.ResponseWriter, r *http.Request) {

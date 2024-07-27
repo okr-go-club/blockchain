@@ -17,7 +17,16 @@ export default function TransactionsPage({ caption }: { caption: string }) {
     queryFn: fetchTransactions,
   });
 
-  if (!data || !data.length) return <>There is no transactions yet.</>
+  if (!data || !data.length) {
+    return (
+      <>
+        <>There is no transactions yet.</>
+        <Flex justifyContent={"flex-end"} my={6}>
+          <AddTransactionsModalButton />
+        </Flex>
+      </>
+    );
+  }
   if (isPending) return <CenteredSpinner />;
   if (error) return <ErrorAlert message={error.toString()} />;
 
