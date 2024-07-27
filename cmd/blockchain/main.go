@@ -63,6 +63,10 @@ func main() {
 
 	mux.HandleFunc("GET /blockchain/mine/{id}/status", handler.GetMiningStatus)
 
+	mux.HandleFunc("POST /transactions", handler.PostTransaction)
+
+	mux.HandleFunc("OPTIONS /transactions", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
+
 	mux.HandleFunc("GET /transactions/pool/", handler.GetTransactionPool)
 
 	mux.HandleFunc("GET /blocks/pool/", handler.GetBlocksPool)
