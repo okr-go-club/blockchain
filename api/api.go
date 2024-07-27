@@ -147,3 +147,25 @@ func (h *Handler) GetBlocksPool(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func (h *Handler) AddTransactionToPool(w http.ResponseWriter, r *http.Request) {
+	var transaction chain.Transaction
+
+	err := json.NewDecoder(r.Body).Decode(&transaction)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// TODO fix validation alghorithm
+	if !transaction.IsValid() {
+		http.Error(w, "Invalid transaction", http.StatusBadRequest)
+		return
+	}
+
+	err = h.Blockchain.AddTransactionToPool(transaction)
+	if err != nil {
+		http.Error(w, "Error while adding transaction to pool", http.StatusBadRequest)
+		return
+	}
+}

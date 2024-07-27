@@ -67,6 +67,8 @@ func main() {
 
 	mux.HandleFunc("GET /blocks/pool/", handler.GetBlocksPool)
 
+	mux.HandleFunc("POST /transaction/add/", handler.AddTransactionToPool)
+
 	server := http.Server{
 		Addr:    *httpAddress,
 		Handler: api.SetCORSHeaders(mux),
