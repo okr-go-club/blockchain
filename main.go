@@ -1,61 +1,54 @@
 package main
 
 import (
+	"blockchain/api"
+	"blockchain/chain"
+	"blockchain/p2p"
+	"blockchain/storage"
+	"bufio"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
+	"runtime"
 	"strings"
+	"time"
+
+	"github.com/google/uuid"
 )
 
-type APIHandler struct {
-	blockchain *Blockchain
-	node       *Node
-}
-
-func (api *APIHandler) AddTransactionHandler(w http.ResponseWriter, r *http.Request) {
-	var transaction Transaction
-
-	err := json.NewDecoder(r.Body).Decode(&transaction)
+func PrettyPrintBlockchain(blockchain *chain.Blockchain) {
+	blockchainJSON, err := json.MarshalIndent(blockchain, "", "  ")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		log.Fatalf("Failed to marshal blockchain: %v", err)
 	}
-
-	if !transaction.IsValid() {
-		http.Error(w, "Invalid transaction", http.StatusBadRequest)
-		return
-	}
-
-	api.blockchain.AddTransactionToPool(transaction)
-	api.node.BroadcastTransaction(transaction)
-
-	_, err = w.Write([]byte("Transaction added to the blockchain\n"))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	fmt.Println(string(blockchainJSON))
 }
 
 func main() {
-	blockchain := InitBlockchain(5, 5, 5)
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	storage, err := storage.NewBadgerStorage("./chain_storage")
+	if err != nil {
+		fmt.Println("Error")
+		fmt.Println(err)
+	}
+	defer storage.Close()
 
+	blockchain := chain.InitBlockchain(5, 5, 5, storage)
 	listenAddress := flag.String("address", "localhost:8080", "Address to listen on")
+	httpAddress := flag.String("http", "localhost:8090", "Address to listen on")
 	peers := flag.String("peers", "", "Comma-separated list of peers to connect to")
 	flag.Parse()
 
-	node := NewNode(*listenAddress, strings.Split(*peers, ","))
-
-	apiHandler := APIHandler{blockchain: blockchain, node: node}
-
-	go func() {
-		http.HandleFunc("/api/add-transaction", apiHandler.AddTransactionHandler)
-		err := http.ListenAndServe(":8888", nil)
-		if err != nil {
-			return
-		}
-	}()
-
+	node := p2p.NewNode(*listenAddress, strings.Split(*peers, ","))
+	handler := api.Handler{
+		Blockchain:     blockchain,
+		Node:           node,
+		MiningStatuses: make(map[uuid.UUID]api.MineStatusResponse),
+	}
 	go node.StartServer(blockchain)
 
 	for _, peer := range node.Peers {
@@ -64,75 +57,199 @@ func main() {
 		}
 	}
 
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("POST /blockchain/mine", handler.MineBlock)
+
+	mux.HandleFunc("GET /blockchain/mine/{id}/status", handler.GetMiningStatus)
+
+	mux.HandleFunc("GET /transactions/pool/", handler.GetTransactionPool)
+
+	mux.HandleFunc("GET /blocks/pool/", handler.GetBlocksPool)
+
+	server := http.Server{
+		Addr:    *httpAddress,
+		Handler: api.SetCORSHeaders(mux),
+	}
+
+	go func() {
+		err := server.ListenAndServe()
+		if err != nil {
+			if !errors.Is(err, http.ErrServerClosed) {
+				panic(err)
+			}
+		}
+	}()
+
+	go func() {
+		stdReader := bufio.NewReader(os.Stdin)
+		for {
+			fmt.Print("Enter message to broadcast (transaction/block): ")
+			msg, err := stdReader.ReadString('\n')
+			if err != nil {
+				fmt.Println("Error reading from stdin:", err)
+				return
+			}
+			msg = strings.TrimSpace(msg)
+			switch msg {
+			case "transaction":
+				tx := chain.Transaction{
+					FromAddress:   "Alice",
+					ToAddress:     "Bob",
+					Amount:        5.00,
+					Timestamp:     int(time.Now().Unix()),
+					TransactionId: uuid.New().String(),
+				}
+				node.BroadcastTransaction(tx)
+			case "block":
+				block := chain.Block{
+					Transactions: nil,
+					Timestamp:    time.Now().Unix(),
+					Capacity:     5,
+					PreviousHash: "previousHash",
+				}
+				node.BroadcastBlock(block)
+			default:
+				fmt.Println("Unknown message type")
+			}
+		}
+	}()
+
 	select {}
 }
 
 //nolint:all
 func test() {
-	w := new(Wallet)
+	w := new(chain.Wallet)
 	w.KeyGen()
 	fmt.Println("Successfully generate wallet keys!")
 	fmt.Print("\n\n")
 
-	chain := InitBlockchain(5, 5, 5)
+	storage, err := storage.NewBadgerStorage("./chain_storage")
+	if err != nil {
+		panic(err)
+	}
+	defer storage.Close()
+
+	blockchain := chain.InitBlockchain(5, 5, 5, storage)
 	fmt.Println("Successfully initialized blockchain!")
-	fmt.Println("Blockchain is valid: ", chain.IsValid())
+	fmt.Println("Blockchain is valid: ", blockchain.IsValid())
 	fmt.Print("\n\n")
 
-	fmt.Println("Balance of 0x123 before mining:", chain.GetBalance("0x123"))
+	fmt.Println("Balance of 0x123 before mining:", blockchain.GetBalance("0x123"))
 	fmt.Println("Adding transactions to the pool...")
 
-	t1, err := NewTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
+	t1, err := chain.NewTransaction(w.PrivateKey, w.PublicKey, "0x123", 5.0)
 	if err != nil {
 		fmt.Println("Error creating transaction:", err)
 		return
 	}
-	chain.AddTransactionToPool(t1)
+	blockchain.AddTransactionToPool(t1)
 
-	t2, err := NewTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
+	t2, err := chain.NewTransaction(w.PrivateKey, w.PublicKey, "0x123", 5.0)
 	if err != nil {
 		fmt.Println("Error creating transaction:", err)
 		return
 	}
-	chain.AddTransactionToPool(t2)
+	blockchain.AddTransactionToPool(t2)
 
-	t3, err := NewTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
+	t3, err := chain.NewTransaction(w.PrivateKey, w.PublicKey, "0x123", 5.0)
 	if err != nil {
 		fmt.Println("Error creating transaction:", err)
 		return
 	}
-	chain.AddTransactionToPool(t3)
+	blockchain.AddTransactionToPool(t3)
 
-	t4, err := NewTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
+	t4, err := chain.NewTransaction(w.PrivateKey, w.PublicKey, "0x123", 5.0)
 	if err != nil {
 		fmt.Println("Error creating transaction:", err)
 		return
 	}
-	chain.AddTransactionToPool(t4)
+	blockchain.AddTransactionToPool(t4)
 
-	t5, err := NewTransaction(w.privateKey, w.publicKey, "0x123", 5.0)
+	t5, err := chain.NewTransaction(w.PrivateKey, w.PublicKey, "0x123", 5.0)
 	if err != nil {
 		fmt.Println("Error creating transaction:", err)
 		return
 	}
-	chain.AddTransactionToPool(t5)
+	blockchain.AddTransactionToPool(t5)
 
-	fmt.Println("Length of pending transactions:", len(chain.PendingTransactions))
+	fmt.Println("Length of pending transactions:", len(blockchain.PendingTransactions))
 	fmt.Print("\n\n")
 
 	fmt.Println("Mining...")
-	chain.MinePendingTransactions("0x123")
+	blockchain.MinePendingTransactions("0x123")
 	fmt.Println("Mining successful. New block added to the chain!")
-	fmt.Println("Blockchain is valid: ", chain.IsValid())
+	fmt.Println("Blockchain is valid: ", blockchain.IsValid())
 	fmt.Print("\n\n")
 
-	fmt.Println("Balance of 0x123 after mining:", chain.GetBalance("0x123"))
+	fmt.Println("Balance of 0x123 after mining:", blockchain.GetBalance("0x123"))
 	fmt.Print("\n\n")
 
-	fmt.Println("Length of pending transactions after mining:", len(chain.PendingTransactions))
+	fmt.Println("Length of pending transactions after mining:", len(blockchain.PendingTransactions))
 	fmt.Print("\n\n")
 
 	fmt.Println("Adding invalid block to the chain...")
-	chain.AddBlock(Block{})
-	fmt.Println("Blockchain is valid: ", chain.IsValid())
+	blockchain.AddBlock(chain.Block{})
+	fmt.Println("Blockchain is valid: ", blockchain.IsValid())
+}
+
+//nolint:all
+func testPersistency() {
+	storage, err := storage.NewBadgerStorage("./chain_storage")
+	if err != nil {
+		fmt.Println("Error")
+		fmt.Println(err)
+	}
+	defer storage.Close()
+
+	blockchain := chain.InitBlockchain(5, 5, 5, storage)
+	fmt.Println(blockchain)
+	tx1 := chain.Transaction{
+		FromAddress:   "First",
+		ToAddress:     "Bob",
+		Amount:        5.00,
+		Timestamp:     int(time.Now().Unix()),
+		TransactionId: uuid.New().String(),
+	}
+	tx2 := chain.Transaction{
+		FromAddress:   "Second",
+		ToAddress:     "Bob",
+		Amount:        5.00,
+		Timestamp:     int(time.Now().Unix()),
+		TransactionId: uuid.New().String(),
+	}
+	blockchain.AddTransactionToPool(tx1)
+	blockchain.AddTransactionToPool(tx2)
+	blockchain.MinePendingTransactions("some_address")
+	tx3 := chain.Transaction{
+		FromAddress:   "Third",
+		ToAddress:     "Bob",
+		Amount:        5.00,
+		Timestamp:     int(time.Now().Unix()),
+		TransactionId: uuid.New().String(),
+	}
+	blockchain.AddTransactionToPool(tx3)
+	blockchain.MinePendingTransactions("another_address")
+	PrettyPrintBlockchain(blockchain)
+
+	newChain := chain.Blockchain{Difficulty: 5, MaxBlockSize: 5, MiningReward: 5, Storage: storage}
+	genesisBlock := chain.Block{
+		Timestamp: time.Now().Unix(),
+	}
+	genesisBlock.MineBlock(blockchain.Difficulty)
+	newChain.AddBlock(genesisBlock)
+	newChain.Storage.AddBlock(genesisBlock)
+	tx4 := chain.Transaction{
+		FromAddress:   "NEW ONE",
+		ToAddress:     "Bob",
+		Amount:        5.00,
+		Timestamp:     int(time.Now().Unix()),
+		TransactionId: uuid.New().String(),
+	}
+	newChain.AddTransactionToPool(tx4)
+	newChain.MinePendingTransactions("NEW CHAIN ADDR")
+	storage.Reset(&newChain)
+	chain := chain.InitBlockchain(5, 5, 5, storage)
+	PrettyPrintBlockchain(chain)
 }

@@ -1,8 +1,7 @@
-package main
+package chain
 
 import (
 	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/x509"
@@ -124,13 +123,13 @@ func (t *Transaction) IsValid() bool {
 	return isValid
 }
 
-func (t *Transaction) Sign(privateKeyPEMStr string) error {
-	pemBlock, _ := pem.Decode([]byte(privateKeyPEMStr))
+func (t *Transaction) Sign(PrivateKeyPEMStr string) error {
+	pemBlock, _ := pem.Decode([]byte(PrivateKeyPEMStr))
 	if pemBlock == nil {
 		return errors.New("failed to parse PEM block containing the key")
 	}
 
-	privateKey, err := x509.ParseECPrivateKey(pemBlock.Bytes)
+	PrivateKey, err := x509.ParseECPrivateKey(pemBlock.Bytes)
 	if err != nil {
 		return err
 	}
@@ -141,7 +140,7 @@ func (t *Transaction) Sign(privateKeyPEMStr string) error {
 	}
 
 	hashed := sha256.Sum256(hash)
-	r, s, err := ecdsa.Sign(rand.Reader, privateKey, hashed[:])
+	r, s, err := ecdsa.Sign(rand.Reader, PrivateKey, hashed[:])
 	if err != nil {
 		return err
 	}
@@ -166,12 +165,12 @@ func (t *Transaction) verifySignature() (bool, error) {
 		return false, errors.New("failed to parse PEM block containing the key")
 	}
 
-	publicKeyInterface, err := x509.ParsePKIXPublicKey(pemBlock.Bytes)
+	PublicKeyInterface, err := x509.ParsePKIXPublicKey(pemBlock.Bytes)
 	if err != nil {
 		return false, err
 	}
 
-	publicKey, ok := publicKeyInterface.(*ecdsa.PublicKey)
+	PublicKey, ok := PublicKeyInterface.(*ecdsa.PublicKey)
 	if !ok {
 		return false, errors.New("not ECDSA public key")
 	}
@@ -187,7 +186,7 @@ func (t *Transaction) verifySignature() (bool, error) {
 	}
 
 	hashed := sha256.Sum256(hash)
-	valid := ecdsa.VerifyASN1(publicKey, hashed[:], signatureBytes)
+	valid := ecdsa.Verify(PublicKey, hashed[:], sigStruct.R, sigStruct.S)
 	if !valid {
 		return false, errors.New("signature verification failed")
 	}
@@ -195,7 +194,7 @@ func (t *Transaction) verifySignature() (bool, error) {
 	return true, nil
 }
 
-func NewTransaction(privateKey, fromAddress, toAddress string, amount float64) (Transaction, error) {
+func NewTransaction(PrivateKey, fromAddress, toAddress string, amount float64) (Transaction, error) {
 	t := Transaction{
 		FromAddress:   fromAddress,
 		ToAddress:     toAddress,
@@ -203,7 +202,7 @@ func NewTransaction(privateKey, fromAddress, toAddress string, amount float64) (
 		Timestamp:     int(time.Now().Unix()),
 		TransactionId: uuid.New().String(),
 	}
-	err := t.Sign(privateKey)
+	err := t.Sign(PrivateKey)
 	if err != nil {
 		return Transaction{}, err
 	}
@@ -211,27 +210,33 @@ func NewTransaction(privateKey, fromAddress, toAddress string, amount float64) (
 }
 
 type Blockchain struct {
-	Blocks              []Block
+	Blocks              []Block `json:"blocks"`
 	PendingTransactions []Transaction
-	Difficulty          int
-	MaxBlockSize        int
-	MiningReward        float64
+	Difficulty          int     `json:"difficulty"`
+	MaxBlockSize        int     `json:"maxBlockSize"`
+	MiningReward        float64 `json:"miningReward"`
+	Storage             Storage
 }
 
-func (b *Blockchain) AddBlock(block Block) {
-	if len(b.Blocks) != 0 {
-		block.PreviousHash = b.Blocks[len(b.Blocks)-1].Hash
+func (chain *Blockchain) AddBlock(block Block) {
+	if len(chain.Blocks) != 0 {
+		block.PreviousHash = chain.Blocks[len(chain.Blocks)-1].Hash
 	}
-	b.Blocks = append(b.Blocks, block)
+	chain.Blocks = append(chain.Blocks, block)
 }
 
-func (b *Blockchain) AddTransactionToPool(t Transaction) {
-	b.PendingTransactions = append(b.PendingTransactions, t)
+func (chain *Blockchain) AddTransactionToPool(t Transaction) error {
+	chain.PendingTransactions = append(chain.PendingTransactions, t)
+	err := chain.Storage.AddTransaction(t)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (b *Blockchain) GetBalance(address string) float64 {
+func (chain *Blockchain) GetBalance(address string) float64 {
 	var balance float64 = 0
-	for _, block := range b.Blocks {
+	for _, block := range chain.Blocks {
 		for _, t := range block.Transactions {
 			switch address {
 			case t.ToAddress:
@@ -246,9 +251,9 @@ func (b *Blockchain) GetBalance(address string) float64 {
 	return balance
 }
 
-func (b Blockchain) IsValid() bool {
+func (chain *Blockchain) IsValid() bool {
 	previousHash := ""
-	for index, block := range b.Blocks {
+	for index, block := range chain.Blocks {
 		if !block.IsValid() {
 			return false
 		}
@@ -264,7 +269,7 @@ func (b Blockchain) IsValid() bool {
 	return true
 }
 
-func (chain *Blockchain) MinePendingTransactions(minerAddress string) {
+func (chain *Blockchain) MinePendingTransactions(minerAddress string) error {
 	currentPoolSize := len(chain.PendingTransactions)
 	var transactions []Transaction
 
@@ -295,66 +300,36 @@ func (chain *Blockchain) MinePendingTransactions(minerAddress string) {
 
 	block.MineBlock(chain.Difficulty)
 	chain.AddBlock(block)
-}
-
-func InitBlockchain(difficulty, maxBlockSize int, miningReward float64) *Blockchain {
-	blockchain := Blockchain{Difficulty: difficulty, MaxBlockSize: maxBlockSize, MiningReward: miningReward}
-	genesisBlock := Block{
-		Timestamp: time.Now().Unix(),
-	}
-	genesisBlock.MineBlock(blockchain.Difficulty)
-	blockchain.AddBlock(genesisBlock)
-	return &blockchain
-}
-
-type Wallet struct {
-	privateKey string
-	publicKey  string
-}
-
-func (w *Wallet) KeyGen() {
-	privateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	privateKeyPEMStr, err := privateKeyToPEMString(privateKey)
+	err := chain.Storage.AddBlock(block)
 	if err != nil {
-		fmt.Println("Error converting private key to PEM:", err)
-		return
+		return err
 	}
-	w.privateKey = privateKeyPEMStr
-
-	publicKeyPEMStr, err := publicKeyToPEMString(&privateKey.PublicKey)
-	if err != nil {
-		fmt.Println("Error converting private key to PEM:", err)
-		return
-	}
-	w.publicKey = publicKeyPEMStr
+	return nil
 }
 
-func privateKeyToPEMString(privKey *ecdsa.PrivateKey) (string, error) {
-	der, err := x509.MarshalECPrivateKey(privKey)
-	if err != nil {
-		return "", err
-	}
-
-	pemBlock := &pem.Block{
-		Type:  "EC PRIVATE KEY",
-		Bytes: der,
-	}
-	pemData := pem.EncodeToMemory(pemBlock)
-
-	return string(pemData), nil
+type Storage interface {
+	Load(difficulty, maxBlockSize int, miningReward float64) (*Blockchain, error)
+	AddBlock(b Block) error
+	AddTransaction(t Transaction) error
+	Reset(chain *Blockchain) error
 }
 
-func publicKeyToPEMString(pubKey *ecdsa.PublicKey) (string, error) {
-	der, err := x509.MarshalPKIXPublicKey(pubKey)
-	if err != nil {
-		return "", err
+func InitBlockchain(difficulty, maxBlockSize int, miningReward float64, s Storage) *Blockchain {
+	blockchain, err := s.Load(difficulty, maxBlockSize, miningReward)
+	if err != nil || len(blockchain.Blocks) == 0 {
+		fmt.Println("Could not load blockchain from storage. Creating a new one!")
+		blockchain := Blockchain{Difficulty: difficulty, MaxBlockSize: maxBlockSize, MiningReward: miningReward, Storage: s}
+		genesisBlock := Block{
+			Timestamp: time.Now().Unix(),
+		}
+		genesisBlock.MineBlock(blockchain.Difficulty)
+		blockchain.AddBlock(genesisBlock)
+		err := blockchain.Storage.AddBlock(genesisBlock)
+		if err != nil {
+			panic(err)
+		}
+		return &blockchain
 	}
-
-	pemBlock := &pem.Block{
-		Type:  "PUBLIC KEY",
-		Bytes: der,
-	}
-	pemData := pem.EncodeToMemory(pemBlock)
-
-	return string(pemData), nil
+	fmt.Println("Got blockchain from storage!")
+	return blockchain
 }
