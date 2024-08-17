@@ -162,9 +162,7 @@ func (h *Handler) PostTransaction(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	h.Node.Mutex.Lock()
 	go h.Node.BroadcastTransaction(transaction)
-	h.Node.Mutex.Unlock()
 	w.WriteHeader(http.StatusOK)
 }
 

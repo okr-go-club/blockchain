@@ -30,7 +30,14 @@ func PrettyPrintBlockchain(blockchain *chain.Blockchain) {
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	storage, err := storage.NewBadgerStorage("./chain_storage")
+
+	listenAddress := flag.String("address", "localhost:8080", "Address to listen on")
+	httpAddress := flag.String("http", "localhost:8090", "Address to listen on")
+	peers := flag.String("peers", "", "Comma-separated list of peers to connect to")
+	storage_name := flag.String("storage", "chain_storage", "Badger storage name")
+	flag.Parse()
+
+	storage, err := storage.NewBadgerStorage("./" + *storage_name)
 	if err != nil {
 		fmt.Println("Error")
 		fmt.Println(err)
@@ -38,11 +45,6 @@ func main() {
 	defer storage.Close()
 
 	blockchain := chain.InitBlockchain(5, 5, 5, storage)
-	listenAddress := flag.String("address", "localhost:8080", "Address to listen on")
-	httpAddress := flag.String("http", "localhost:8090", "Address to listen on")
-	peers := flag.String("peers", "", "Comma-separated list of peers to connect to")
-	flag.Parse()
-
 	node := p2p.NewNode(*listenAddress, strings.Split(*peers, ","))
 	handler := api.Handler{
 		Blockchain:     blockchain,
