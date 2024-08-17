@@ -62,28 +62,46 @@ func ProcessMessage(message string, blockchain *chain.Blockchain) error {
 		switch msgType {
 		case "transaction":
 			var tx chain.Transaction
-			err = json.Unmarshal([]byte(message), &tx)
-			if err != nil {
-				fmt.Println("Error unmarshalling transaction:", err)
-				return err
-			} else {
-				fmt.Println("Received transaction:", tx)
-				err := blockchain.AddTransactionToPool(tx)
+			if txData, ok := msgMap["transaction"].(map[string]interface{}); ok {
+				txJson, err := json.Marshal(txData)
 				if err != nil {
+					fmt.Println("Error marshalling transaction:", err)
+					return err
+				}
+
+				err = json.Unmarshal(txJson, &tx)
+				if err != nil {
+					fmt.Println("Error unmarshalling transaction:", err)
+					return err
+				}
+				fmt.Println("Received transaction:", tx)
+				err = blockchain.AddTransactionToPool(tx)
+				if err != nil {
+					fmt.Println("Error adding transaction to pool:", err)
 					return err
 				}
 				fmt.Println("Transaction pool:", blockchain.PendingTransactions)
+			} else {
+				fmt.Println("Invalid transaction data")
 			}
 		case "block":
 			var block chain.Block
-			err = json.Unmarshal([]byte(message), &block)
-			if err != nil {
-				fmt.Println("Error unmarshalling block:", err)
-				return err
-			} else {
+			if blockData, ok := msgMap["block"].(map[string]interface{}); ok {
+				blockJson, err := json.Marshal(blockData)
+				if err != nil {
+					fmt.Println("Error marshalling block:", err)
+					return err
+				}
+				err = json.Unmarshal(blockJson, &block)
+				if err != nil {
+					fmt.Println("Error unmarshalling block:", err)
+					return err
+				}
 				fmt.Println("Received block:", block)
 				blockchain.AddBlock(block)
 				fmt.Println("Blocks:", blockchain.Blocks)
+			} else {
+				fmt.Println("Invalid block data")
 			}
 		default:
 			fmt.Println("Unknown message type")
