@@ -20,7 +20,7 @@ export default function TransactionsPage({ caption }: { caption: string }) {
   if (!data || !data.length) {
     return (
       <>
-        <>There is no transactions yet.</>
+        <>No transactions yet.</>
         <Flex justifyContent={"flex-end"} my={6}>
           <AddTransactionsModalButton />
         </Flex>
