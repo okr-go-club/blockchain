@@ -45,7 +45,7 @@ export default function BlocksTable({ blocks }: BlocksTableProps) {
 
     function renderCellData(column: Column, row: BlockProps) {
         if (column.key === 'transactions') {
-            if (!row[column.key]) return <>There is no transactions yet.</>
+            if (!row[column.key]) return <>No transactions yet.</>
             return <TransactionsModalButton caption={'Transactions'} transactions={row[column.key]} />;
         } else if (column.key === 'hash' || column.key === 'previousHash') {
             return (
