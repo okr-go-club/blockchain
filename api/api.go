@@ -86,6 +86,7 @@ func (h *Handler) MineBlock(w http.ResponseWriter, r *http.Request) {
 				Details: fmt.Sprintf("Error: %v", err),
 			}
 			h.StatusesRWLock.Unlock()
+			return
 		}
 		h.StatusesRWLock.Lock()
 		h.MiningStatuses[id] = MineStatusResponse{Status: StatusSuccessful}

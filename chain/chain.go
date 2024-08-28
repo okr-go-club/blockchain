@@ -275,6 +275,10 @@ func (chain *Blockchain) IsValid() bool {
 
 func (chain *Blockchain) MinePendingTransactions(minerAddress string) (Block, error) {
 	currentPoolSize := len(chain.PendingTransactions)
+	if currentPoolSize == 0 {
+		return Block{}, errors.New("Transaction pool is empty")
+	}
+
 	var transactions []Transaction
 
 	if currentPoolSize < chain.MaxBlockSize {
