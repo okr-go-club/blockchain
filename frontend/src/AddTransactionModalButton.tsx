@@ -12,14 +12,23 @@ import {
 
 import AddTransactionForm from './AddTransactionForm'
 
-export default function AddTransactionsModalButton() {
-    const { isOpen, onOpen, onClose } = useDisclosure()
+interface AddTransactionsModalButtonProps {
+    onClose: () => void;
+  }
+
+export default function AddTransactionsModalButton({ onClose }: AddTransactionsModalButtonProps) {
+    const { isOpen, onOpen, onClose: closeModal } = useDisclosure()
+
+    const handleClose = () => {
+        closeModal();
+        onClose();
+      };
 
     return (
         <>
             <Button onClick={onOpen}>Add Transaction</Button>
 
-            <Modal isOpen={isOpen} onClose={onClose} size={'full'}>
+            <Modal isOpen={isOpen} onClose={handleClose} size={'full'}>
                 <ModalOverlay />
                 <ModalContent>
                     <ModalCloseButton />
@@ -39,7 +48,7 @@ export default function AddTransactionsModalButton() {
                     </ModalBody>
 
                     <ModalFooter>
-                        <Button colorScheme='blue' mr={3} onClick={onClose}>
+                        <Button colorScheme='blue' mr={3} onClick={handleClose}>
                             Close
                         </Button>
                     </ModalFooter>
