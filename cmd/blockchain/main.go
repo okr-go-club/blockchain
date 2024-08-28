@@ -53,8 +53,8 @@ func main() {
 	}
 	go node.StartServer(blockchain)
 
-	for _, peer := range node.Peers {
-		if peer != "" {
+	for peer, ok := range node.Peers {
+		if ok && peer != "" {
 			go node.ConnectToPeer(peer, blockchain)
 		}
 	}

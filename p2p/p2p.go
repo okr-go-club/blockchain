@@ -13,15 +13,19 @@ import (
 
 type Node struct {
 	Address     string
-	Peers       []string
+	Peers       map[string]bool
 	Connections map[string]net.Conn
 	Mutex       sync.Mutex
 }
 
 func NewNode(address string, peers []string) *Node {
+	peersMap := map[string]bool{}
+	for _, peer := range peers {
+		peersMap[peer] = true
+	}
 	return &Node{
 		Address:     address,
-		Peers:       peers,
+		Peers:       peersMap,
 		Connections: make(map[string]net.Conn),
 	}
 }
@@ -141,17 +145,8 @@ func (node *Node) HandleConnection(conn net.Conn, blockchain *chain.Blockchain) 
 	fmt.Println("Received peer address:", message)
 
 	peerAddress := strings.TrimSpace(message)
+	node.Peers[peerAddress] = true
 	node.AddConnection(peerAddress, conn)
-
-	// Notify the peer about itself
-	selfMessage := "PEER:" + node.Address + "\n"
-	_, err = conn.Write([]byte(selfMessage))
-	if err != nil {
-		fmt.Println("Error writing to connection:", err)
-		node.RemoveConnection(conn.RemoteAddr().String())
-		return
-	}
-	fmt.Println("Notified peer about self:", selfMessage)
 
 	// Keep the connection open to read messages
 	for {
@@ -216,17 +211,10 @@ func (node *Node) RemoveConnection(peerAddress string) {
 	if conn, ok := node.Connections[peerAddress]; ok {
 		conn.Close()
 		delete(node.Connections, peerAddress)
+		node.Peers[peerAddress] = false
 		fmt.Println("Connection removed:", peerAddress)
 	} else {
 		fmt.Println("No connection found for:", peerAddress)
-	}
-
-	for i, peer := range node.Peers {
-		if peer == peerAddress {
-			node.Peers = append(node.Peers[:i], node.Peers[i+1:]...)
-			fmt.Println("Peer removed from list:", peerAddress)
-			break
-		}
 	}
 }
 
