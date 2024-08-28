@@ -273,7 +273,7 @@ func (chain *Blockchain) IsValid() bool {
 	return true
 }
 
-func (chain *Blockchain) MinePendingTransactions(minerAddress string) error {
+func (chain *Blockchain) MinePendingTransactions(minerAddress string) (Block, error) {
 	currentPoolSize := len(chain.PendingTransactions)
 	var transactions []Transaction
 
@@ -306,9 +306,9 @@ func (chain *Blockchain) MinePendingTransactions(minerAddress string) error {
 	chain.AddBlock(block)
 	err := chain.Storage.AddBlock(block)
 	if err != nil {
-		return err
+		return Block{}, err
 	}
-	return nil
+	return block, nil
 }
 
 type Storage interface {
