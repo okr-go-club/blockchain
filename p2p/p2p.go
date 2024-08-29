@@ -160,7 +160,7 @@ func (node *Node) HandleConnection(conn net.Conn, blockchain *chain.Blockchain) 
 	}
 	otherLenBlockchain, _ := strconv.Atoi(strings.TrimSpace(message))
 	fmt.Printf(
-		"Received len of blockhain: %s, peer address: %s",
+		"Received len of blockhain: %d, peer address: %s",
 		otherLenBlockchain,
 		peerAddress,
 	)
