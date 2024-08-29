@@ -3,10 +3,13 @@ package p2p
 import (
 	"blockchain/chain"
 	"bufio"
+	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -148,6 +151,20 @@ func (node *Node) HandleConnection(conn net.Conn, blockchain *chain.Blockchain) 
 	node.Peers[peerAddress] = true
 	node.AddConnection(peerAddress, conn)
 
+	// Get len of blockchain
+	message, err = reader.ReadString('\n')
+	if err != nil {
+		fmt.Println("Error reading from connection:", err)
+		node.RemoveConnection(conn.RemoteAddr().String())
+		return
+	}
+	otherLenBlockchain, _ := strconv.Atoi(strings.TrimSpace(message))
+	fmt.Printf(
+		"Received len of blockhain: %s, peer address: %s",
+		otherLenBlockchain,
+		peerAddress,
+	)
+
 	// Keep the connection open to read messages
 	for {
 		message, err := reader.ReadString('\n')
@@ -192,6 +209,21 @@ func (node *Node) ConnectToPeer(address string, blockchain *chain.Blockchain) {
 
 	node.AddConnection(address, conn)
 	fmt.Println("Connected to peer:", address)
+
+	buf := new(bytes.Buffer)
+	var num = int32(len(blockchain.Blocks))
+	err = binary.Write(buf, binary.LittleEndian, num)
+	if err != nil {
+		fmt.Println("binary.Write failed:", err)
+	}
+	buf.Write([]byte("\n"))
+	_, err = conn.Write(buf.Bytes())
+	if err != nil {
+		fmt.Println("Error writing to connection:", err)
+		node.RemoveConnection(conn.RemoteAddr().String())
+		return
+	}
+	fmt.Println("Sent Length of my Blockchain:", len(blockchain.Blocks))
 
 	go node.ReadData(conn, blockchain)
 }
