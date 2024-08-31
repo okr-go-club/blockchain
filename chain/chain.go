@@ -47,7 +47,11 @@ func (b *Block) CalculateHash() string {
 	return hashHex
 }
 
-func (b *Block) MineBlock(difficulty int) {
+func (b *Block) MineBlock(difficulty int) error {
+	if difficulty < 0 {
+		return errors.New("difficulty must be non-negative")
+	}
+
 	for {
 		// Вычисляем хэш блока
 		hash := b.CalculateHash()
@@ -57,7 +61,7 @@ func (b *Block) MineBlock(difficulty int) {
 		if strings.HasPrefix(hash, prefix) {
 			// Nonce найден, блок майнится
 			b.Hash = hash
-			return
+			return nil
 		} else {
 			// Увеличиваем Nonce и пробуем снова
 			b.Nonce++

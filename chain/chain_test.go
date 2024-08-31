@@ -97,3 +97,144 @@ func TestBlock_CalculateHash(t *testing.T) {
 		})
 	}
 }
+
+func TestBlock_MineBlock(t *testing.T) {
+	type fields struct {
+		Transactions []Transaction
+		Timestamp    int64
+		PreviousHash string
+		Nonce        int
+		Hash         string
+		Capacity     int
+	}
+	type args struct {
+		difficulty int
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		wantErr bool
+	}{
+		{
+			name: "simple mining",
+			fields: fields{
+				Transactions: []Transaction{
+					{
+						FromAddress:   "123",
+						ToAddress:     "456",
+						Amount:        10.0,
+						TransactionId: "d6f1c4e6-9d7e-11eb-a8b3-0242ac130003",
+						Timestamp:     1643723400,
+						Signature:     "sig",
+					},
+				},
+				Timestamp:    1643723402,
+				PreviousHash: "",
+				Nonce:        0,
+				Hash:         "",
+				Capacity:     10,
+			},
+			args: args{
+				difficulty: 2,
+			},
+			wantErr: false,
+		},
+		{
+			name: "mining with multiple transactions",
+			fields: fields{
+				Transactions: []Transaction{
+					{
+						FromAddress:   "123",
+						ToAddress:     "456",
+						Amount:        10.0,
+						TransactionId: "d6f1c4e6-9d7e-11eb-a8b3-0242ac130003",
+						Timestamp:     1643723400,
+						Signature:     "sig",
+					},
+					{
+						FromAddress:   "456",
+						ToAddress:     "789",
+						Amount:        20.0,
+						TransactionId: "d6f1c4e7-9d7e-11eb-a8b3-0242ac130004",
+						Timestamp:     1643723401,
+						Signature:     "sig",
+					},
+				},
+				Timestamp:    1643723402,
+				PreviousHash: "",
+				Nonce:        0,
+				Hash:         "",
+				Capacity:     10,
+			},
+			args: args{
+				difficulty: 3,
+			},
+			wantErr: false,
+		},
+		{
+			name: "mining with high difficulty",
+			fields: fields{
+				Transactions: []Transaction{
+					{
+						FromAddress:   "123",
+						ToAddress:     "456",
+						Amount:        10.0,
+						TransactionId: "d6f1c4e6-9d7e-11eb-a8b3-0242ac130003",
+						Timestamp:     1643723400,
+						Signature:     "sig",
+					},
+				},
+				Timestamp:    1643723402,
+				PreviousHash: "",
+				Nonce:        0,
+				Hash:         "",
+				Capacity:     10,
+			},
+			args: args{
+				difficulty: 6,
+			},
+			wantErr: false,
+		},
+		{
+			name: "mining with invalid difficulty",
+			fields: fields{
+				Transactions: []Transaction{
+					{
+						FromAddress:   "123",
+						ToAddress:     "456",
+						Amount:        10.0,
+						TransactionId: "d6f1c4e6-9d7e-11eb-a8b3-0242ac130003",
+						Timestamp:     1643723400,
+						Signature:     "sig",
+					},
+				},
+				Timestamp:    1643723402,
+				PreviousHash: "",
+				Nonce:        0,
+				Hash:         "",
+				Capacity:     10,
+			},
+			args: args{
+				difficulty: -1,
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := &Block{
+				Transactions: tt.fields.Transactions,
+				Timestamp:    tt.fields.Timestamp,
+				PreviousHash: tt.fields.PreviousHash,
+				Nonce:        tt.fields.Nonce,
+				Hash:         tt.fields.Hash,
+				Capacity:     tt.fields.Capacity,
+			}
+			err := b.MineBlock(tt.args.difficulty)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Block.MineBlock() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
