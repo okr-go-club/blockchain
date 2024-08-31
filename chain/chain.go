@@ -284,9 +284,11 @@ func (chain *Blockchain) MinePendingTransactions(minerAddress string) (Block, er
 	if currentPoolSize < chain.MaxBlockSize {
 		transactions = chain.PendingTransactions[0:currentPoolSize]
 		chain.PendingTransactions = chain.PendingTransactions[currentPoolSize:]
+		chain.Storage.DequeueTransactions(currentPoolSize)
 	} else {
 		transactions = chain.PendingTransactions[0 : chain.MaxBlockSize-1]
 		chain.PendingTransactions = chain.PendingTransactions[chain.MaxBlockSize-1:]
+		chain.Storage.DequeueTransactions(chain.MaxBlockSize - 1)
 	}
 
 	rewardTx := Transaction{
@@ -306,6 +308,7 @@ func (chain *Blockchain) MinePendingTransactions(minerAddress string) (Block, er
 	}
 	block.Hash = block.CalculateHash()
 
+	// TODO: recover if mining failed
 	block.MineBlock(chain.Difficulty)
 	chain.AddBlock(block)
 	err := chain.Storage.AddBlock(block)
@@ -320,6 +323,7 @@ type Storage interface {
 	AddBlock(b Block) error
 	AddTransaction(t Transaction) error
 	Reset(chain *Blockchain) error
+	DequeueTransactions(n int) error
 }
 
 func InitBlockchain(difficulty, maxBlockSize int, miningReward float64, s Storage) *Blockchain {

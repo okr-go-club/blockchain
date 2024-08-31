@@ -158,6 +158,33 @@ func (bs *Storage) AddTransaction(t chain.Transaction) error {
 	return err
 }
 
+func (bs *Storage) DequeueTransactions(n int) error {
+	return bs.db.Update(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchValues = false
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		prefix := []byte(transactionPrefix)
+		count := 0
+
+		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+			if count >= n {
+				break
+			}
+
+			key := it.Item().Key()
+			if err := txn.Delete(key); err != nil {
+				return err
+			}
+
+			count++
+		}
+
+		return nil
+	})
+}
+
 func (storage *Storage) deleteByPrefix(prefix []byte) error {
 	deleteKeys := func(keysForDelete [][]byte) error {
 		if err := storage.db.Update(func(txn *badger.Txn) error {
