@@ -284,11 +284,17 @@ func (chain *Blockchain) MinePendingTransactions(minerAddress string) (Block, er
 	if currentPoolSize < chain.MaxBlockSize {
 		transactions = chain.PendingTransactions[0:currentPoolSize]
 		chain.PendingTransactions = chain.PendingTransactions[currentPoolSize:]
-		chain.Storage.DequeueTransactions(currentPoolSize)
+		err := chain.Storage.DequeueTransactions(currentPoolSize)
+		if err != nil {
+			fmt.Println("Could not dequeue transactions from storage")
+		}
 	} else {
 		transactions = chain.PendingTransactions[0 : chain.MaxBlockSize-1]
 		chain.PendingTransactions = chain.PendingTransactions[chain.MaxBlockSize-1:]
-		chain.Storage.DequeueTransactions(chain.MaxBlockSize - 1)
+		err := chain.Storage.DequeueTransactions(chain.MaxBlockSize - 1)
+		if err != nil {
+			fmt.Println("Could not dequeue transactions from storage")
+		}
 	}
 
 	rewardTx := Transaction{
@@ -308,6 +314,7 @@ func (chain *Blockchain) MinePendingTransactions(minerAddress string) (Block, er
 	}
 	block.Hash = block.CalculateHash()
 
+	// TODO: sync transaction removal between nodes
 	// TODO: recover if mining failed
 	block.MineBlock(chain.Difficulty)
 	chain.AddBlock(block)
