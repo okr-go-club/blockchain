@@ -12,17 +12,21 @@ async function fetchTransactions(): Promise<TransactionProps[]> {
 }
 
 export default function TransactionsPage({ caption }: { caption: string }) {
-  const { isPending, error, data } = useQuery({
+  const { isPending, error, data, refetch } = useQuery({
     queryKey: ["transactions"],
     queryFn: fetchTransactions,
   });
+
+  const handleRefetch = () => {
+    refetch();
+  };
 
   if (!data || !data.length) {
     return (
       <>
         <>No transactions yet.</>
         <Flex justifyContent={"flex-end"} my={6}>
-          <AddTransactionsModalButton />
+          <AddTransactionsModalButton onClose={handleRefetch} />
         </Flex>
       </>
     );
@@ -34,7 +38,7 @@ export default function TransactionsPage({ caption }: { caption: string }) {
     <>
       <TransactionsTable caption={caption} transactions={data} />
       <Flex justifyContent={"flex-end"} my={6}>
-        <AddTransactionsModalButton />
+        <AddTransactionsModalButton onClose={handleRefetch} />
       </Flex>
     </>
   );
