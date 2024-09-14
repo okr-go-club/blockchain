@@ -210,20 +210,7 @@ func (node *Node) ConnectToPeer(address string, blockchain *chain.Blockchain) {
 	node.AddConnection(address, conn)
 	fmt.Println("Connected to peer:", address)
 
-	buf := new(bytes.Buffer)
-	var num = int32(len(blockchain.Blocks))
-	err = binary.Write(buf, binary.LittleEndian, num)
-	if err != nil {
-		fmt.Println("binary.Write failed:", err)
-	}
-	buf.Write([]byte("\n"))
-	_, err = conn.Write(buf.Bytes())
-	if err != nil {
-		fmt.Println("Error writing to connection:", err)
-		node.RemoveConnection(conn.RemoteAddr().String())
-		return
-	}
-	fmt.Println("Sent Length of my Blockchain:", len(blockchain.Blocks))
+	node.SentLenBlockchain(conn, blockchain)
 
 	go node.ReadData(conn, blockchain)
 }
@@ -248,6 +235,23 @@ func (node *Node) RemoveConnection(peerAddress string) {
 	} else {
 		fmt.Println("No connection found for:", peerAddress)
 	}
+}
+
+func (node *Node) SentLenBlockchain(conn net.Conn, blockchain *chain.Blockchain) {
+	buf := new(bytes.Buffer)
+	var num = int64(len(blockchain.Blocks))
+	err := binary.Write(buf, binary.LittleEndian, num)
+	if err != nil {
+		fmt.Println("binary.Write failed:", err)
+	}
+	buf.Write([]byte("\n"))
+	_, err = conn.Write(buf.Bytes())
+	if err != nil {
+		fmt.Println("Error writing to connection:", err)
+		node.RemoveConnection(conn.RemoteAddr().String())
+		return
+	}
+	fmt.Println("Sent Length of my Blockchain:", len(blockchain.Blocks))
 }
 
 func (node *Node) ReadData(conn net.Conn, blockchain *chain.Blockchain) {
