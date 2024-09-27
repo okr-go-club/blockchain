@@ -3,8 +3,6 @@ package p2p
 import (
 	"blockchain/chain"
 	"bufio"
-	"bytes"
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -238,14 +236,10 @@ func (node *Node) RemoveConnection(peerAddress string) {
 }
 
 func (node *Node) SentLenBlockchain(conn net.Conn, blockchain *chain.Blockchain) {
-	buf := new(bytes.Buffer)
-	var num = int64(len(blockchain.Blocks))
-	err := binary.Write(buf, binary.LittleEndian, num)
-	if err != nil {
-		fmt.Println("binary.Write failed:", err)
-	}
-	buf.Write([]byte("\n"))
-	_, err = conn.Write(buf.Bytes())
+	num := len(blockchain.Blocks)
+	message := strconv.Itoa(num)
+	_, err := conn.Write([]byte(message + "\n"))
+
 	if err != nil {
 		fmt.Println("Error writing to connection:", err)
 		node.RemoveConnection(conn.RemoteAddr().String())
