@@ -149,6 +149,8 @@ func (node *Node) HandleConnection(conn net.Conn, blockchain *chain.Blockchain) 
 	node.Peers[peerAddress] = true
 	node.AddConnection(peerAddress, conn)
 
+	go cronjob(node)
+
 	// Get len of blockchain
 	message, err = reader.ReadString('\n')
 	if err != nil {
@@ -158,7 +160,7 @@ func (node *Node) HandleConnection(conn net.Conn, blockchain *chain.Blockchain) 
 	}
 	otherLenBlockchain, _ := strconv.Atoi(strings.TrimSpace(message))
 	fmt.Printf(
-		"Received len of blockhain: %d, peer address: %s",
+		"Received len of blockhain: %d, peer address: %s\n",
 		otherLenBlockchain,
 		peerAddress,
 	)
