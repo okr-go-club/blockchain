@@ -174,7 +174,7 @@ func (storage *Storage) deleteByPrefix(prefix []byte) error {
 	}
 
 	collectSize := 100000
-	storage.db.View(func(txn *badger.Txn) error { //nolint:all
+	err := storage.db.View(func(txn *badger.Txn) error {
 		opts := badger.DefaultIteratorOptions
 		opts.AllVersions = false
 		opts.PrefetchValues = false
@@ -203,6 +203,10 @@ func (storage *Storage) deleteByPrefix(prefix []byte) error {
 
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
