@@ -5,6 +5,29 @@
 
 An educational project for learning `Golang` and `blockchain` technology. This project uses `Golang`, `net/http` for networking, and `Badger` as persistent storage.
 
+### Prerequisites
+Before running the project, make sure you have the following installed:
+- [Golang](https://golang.org/doc/install) (version 1.22.2 or higher)
+- [Node.js](https://nodejs.org/) (version 14 or higher)
+- [npm](https://www.npmjs.com/get-npm) (comes with Node.js)
+
+### Installation
+1. Clone the repository:
+    ```shell
+    git clone https://github.com/okr-go-club/blockchain.git
+    cd blockchain
+    ```
+2. Install dependencies for the backend:
+    ```shell
+    go mod tidy
+    ```
+3. Install dependencies for the frontend:
+    ```shell
+    cd frontend
+    npm install
+    ```
+4. Run the project (as described in the "Run" section below).
+
 ### Run
 An example of running multiple nodes on a single machine:
 ```shell
@@ -32,3 +55,14 @@ npm start
 ```
 
 The default port is `8090`, but you can change it in `frontend/src/axiosConfig.ts`.
+
+### Contributing
+Contributions are welcome! If you would like to contribute, please follow these steps:
+
+1. Fork the repository.
+2. Create a new branch (`git checkout -b feature-branch`).
+3. Commit your changes (`git commit -m 'Add new feature'`).
+4. Push to the branch (`git push origin feature-branch`).
+5. Open a pull request.
+
+Please make sure your code follows the existing style and passes all linting checks before submitting a PR.
