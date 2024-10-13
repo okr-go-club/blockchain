@@ -7,7 +7,27 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"testing"
+	"time"
 )
+
+// MockStorage is a mock implementation of the Storage interface for testing
+type MockStorage struct{}
+
+func (ms *MockStorage) Load(difficulty, maxBlockSize int, miningReward float64) (*Blockchain, error) {
+	return nil, nil
+}
+
+func (ms *MockStorage) AddBlock(b Block) error {
+	return nil
+}
+
+func (ms *MockStorage) AddTransaction(t Transaction) error {
+	return nil
+}
+
+func (ms *MockStorage) Reset(chain *Blockchain) error {
+	return nil
+}
 
 func TestBlock_CalculateHash(t *testing.T) {
 	type fields struct {
@@ -612,6 +632,109 @@ func TestNewTransaction(t *testing.T) {
 				if !isValid {
 					t.Errorf("NewTransaction() signature is invalid")
 				}
+			}
+		})
+	}
+}
+
+func TestBlockchain_AddBlock(t *testing.T) {
+	// Create a mock Storage implementation for testing
+	mockStorage := &MockStorage{}
+
+	// Initialize a blockchain with a genesis block
+	chain := &Blockchain{
+		Blocks:       []Block{},
+		Difficulty:   2,
+		MaxBlockSize: 5,
+		MiningReward: 1.0,
+		Storage:      mockStorage,
+	}
+	genesisBlock := Block{
+		Timestamp:    time.Now().Unix(),
+		PreviousHash: "",
+		Hash:         "genesis_hash",
+	}
+	chain.AddBlock(genesisBlock)
+
+	tests := []struct {
+		name          string
+		block         Block
+		expectedCount int
+		checkPrevHash bool
+	}{
+		{
+			name: "Add valid block",
+			block: Block{
+				Transactions: []Transaction{
+					{FromAddress: "addr1", ToAddress: "addr2", Amount: 10},
+				},
+				Timestamp: time.Now().Unix(),
+				Nonce:     1234,
+				Hash:      "valid_hash",
+			},
+			expectedCount: 2,
+			checkPrevHash: true,
+		},
+		{
+			name: "Add another valid block",
+			block: Block{
+				Transactions: []Transaction{
+					{FromAddress: "addr2", ToAddress: "addr3", Amount: 20},
+					{FromAddress: "addr1", ToAddress: "addr3", Amount: 15},
+				},
+				Timestamp: time.Now().Unix(),
+				Nonce:     5678,
+				Hash:      "another_valid_hash",
+			},
+			expectedCount: 3,
+			checkPrevHash: true,
+		},
+		{
+			name: "Add block with empty transactions",
+			block: Block{
+				Transactions: []Transaction{},
+				Timestamp:    time.Now().Unix(),
+				Nonce:        9012,
+				Hash:         "empty_transactions_hash",
+			},
+			expectedCount: 4,
+			checkPrevHash: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			initialCount := len(chain.Blocks)
+			chain.AddBlock(tt.block)
+
+			// Check if the block was added
+			if len(chain.Blocks) != tt.expectedCount {
+				t.Errorf("AddBlock() block count = %v, want %v", len(chain.Blocks), tt.expectedCount)
+			}
+
+			// Check if the added block is the last one in the chain
+			addedBlock := chain.Blocks[len(chain.Blocks)-1]
+			if addedBlock.Hash != tt.block.Hash {
+				t.Errorf("AddBlock() added block hash = %v, want %v", addedBlock.Hash, tt.block.Hash)
+			}
+
+			// Check if the PreviousHash of the added block is set correctly
+			if tt.checkPrevHash {
+				expectedPrevHash := chain.Blocks[initialCount-1].Hash
+				if addedBlock.PreviousHash != expectedPrevHash {
+					t.Errorf("AddBlock() PreviousHash = %v, want %v", addedBlock.PreviousHash, expectedPrevHash)
+				}
+			}
+
+			// Check other fields of the added block
+			if addedBlock.Timestamp != tt.block.Timestamp {
+				t.Errorf("AddBlock() Timestamp = %v, want %v", addedBlock.Timestamp, tt.block.Timestamp)
+			}
+			if addedBlock.Nonce != tt.block.Nonce {
+				t.Errorf("AddBlock() Nonce = %v, want %v", addedBlock.Nonce, tt.block.Nonce)
+			}
+			if len(addedBlock.Transactions) != len(tt.block.Transactions) {
+				t.Errorf("AddBlock() Transaction count = %v, want %v", len(addedBlock.Transactions), len(tt.block.Transactions))
 			}
 		})
 	}
