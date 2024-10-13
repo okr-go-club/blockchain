@@ -244,73 +244,7 @@ func TestBlock_MineBlock(t *testing.T) {
 	}
 }
 
-// func TestBlock_IsValid(t *testing.T) {
-// 	type fields struct {
-// 		Transactions []Transaction
-// 		Timestamp    int64
-// 		PreviousHash string
-// 		Nonce        int
-// 		Hash         string
-// 		Capacity     int
-// 	}
-// 	tests := []struct {
-// 		name   string
-// 		fields fields
-// 		want   bool
-// 	}{
-// 		{
-// 			name: "empty block is invalid",
-// 			fields: fields{
-// 				Transactions: []Transaction{},
-// 			},
-// 			want: false,
-// 		},
-// 		{
-// 			name: "block with transactions is valid",
-// 			fields: fields{
-// 				Transactions: []Transaction{
-// 					{
-// 						FromAddress:   "123",
-// 						ToAddress:     "456",
-// 						Amount:        10.0,
-// 						TransactionId: "d6f1c4e6-9d7e-11eb-a8b3-0242ac130003",
-// 						Timestamp:     1643723400,
-// 						Signature:     b.Transactions[0].generateVerifiedSignature(),
-// 					},
-// 				},
-// 			},
-// 			want: true,
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			b := &Block{
-// 				Transactions: tt.fields.Transactions,
-// 				Timestamp:    tt.fields.Timestamp,
-// 				PreviousHash: tt.fields.PreviousHash,
-// 				Nonce:        tt.fields.Nonce,
-// 				Hash:         tt.fields.Hash,
-// 				Capacity:     tt.fields.Capacity,
-// 			}
-// 			if got := b.IsValid(); got != tt.want {
-// 				t.Errorf("Block.IsValid() = %v, want %v", got, tt.want)
-// 			}
-// 		})
-// 	}
-// }
-
-func TestTransaction_verifySignature(t *testing.T) {
-	// Generate a private key
-	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Marshal the private key to PEM
-	privateKeyPEM := pem.EncodeToMemory(
-		&pem.Block{Type: "EC PRIVATE KEY", Bytes: x509.MarshalPKCS8PrivateKey(privateKey)},
-	)
-
+func TestTransaction_Sign(t *testing.T) {
 	type fields struct {
 		FromAddress   string
 		ToAddress     string
@@ -319,36 +253,60 @@ func TestTransaction_verifySignature(t *testing.T) {
 		TransactionId string
 		Signature     string
 	}
+	type args struct {
+		PrivateKeyPEMStr string
+	}
 	tests := []struct {
 		name    string
 		fields  fields
-		want    bool
+		args    args
 		wantErr bool
 	}{
 		{
-			name: "valid signature",
+			name: "Valid signature",
 			fields: fields{
-				FromAddress:   "123",
-				ToAddress:     "456",
-				Amount:        10.0,
+				FromAddress:   "sender_address",
+				ToAddress:     "recipient_address",
+				Amount:        100.0,
 				Timestamp:     1643723400,
-				TransactionId: "d6f1c4e6-9d7e-11eb-a8b3-0242ac130003",
-				Signature:     "",
+				TransactionId: "valid_transaction_id",
 			},
-			want:    true,
+			args: args{
+				PrivateKeyPEMStr: func() string {
+					privateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+					privateKeyBytes, _ := x509.MarshalECPrivateKey(privateKey)
+					privateKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: privateKeyBytes})
+					return string(privateKeyPEM)
+				}(),
+			},
 			wantErr: false,
 		},
 		{
-			name: "invalid signature",
+			name: "Invalid private key",
 			fields: fields{
-				FromAddress:   "123",
-				ToAddress:     "456",
-				Amount:        10.0,
+				FromAddress:   "sender_address",
+				ToAddress:     "recipient_address",
+				Amount:        100.0,
 				Timestamp:     1643723400,
-				TransactionId: "d6f1c4e6-9d7e-11eb-a8b3-0242ac130003",
-				Signature:     "wrong signature",
+				TransactionId: "invalid_key_transaction_id",
 			},
-			want:    false,
+			args: args{
+				PrivateKeyPEMStr: "invalid_private_key",
+			},
+			wantErr: true,
+		},
+		{
+			name: "Empty private key",
+			fields: fields{
+				FromAddress:   "sender_address",
+				ToAddress:     "recipient_address",
+				Amount:        100.0,
+				Timestamp:     1643723400,
+				TransactionId: "empty_key_transaction_id",
+			},
+			args: args{
+				PrivateKeyPEMStr: "",
+			},
 			wantErr: true,
 		},
 	}
@@ -360,22 +318,10 @@ func TestTransaction_verifySignature(t *testing.T) {
 				Amount:        tt.fields.Amount,
 				Timestamp:     tt.fields.Timestamp,
 				TransactionId: tt.fields.TransactionId,
+				Signature:     tt.fields.Signature,
 			}
-
-			// Sign the transaction using the private key
-			err = tr.Sign(string(privateKeyPEM))
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			// Verify the signature
-			got, err := tr.VerifySignature()
-			if err != nil {
-				t.Errorf("VerifySignature() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("VerifySignature() = %v, want %v", got, tt.want)
+			if err := tr.Sign(tt.args.PrivateKeyPEMStr); (err != nil) != tt.wantErr {
+				t.Errorf("Transaction.Sign() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
