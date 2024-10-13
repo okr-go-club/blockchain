@@ -553,3 +553,66 @@ func TestTransaction_verifySignature(t *testing.T) {
 		})
 	}
 }
+
+func TestNewTransaction(t *testing.T) {
+	// Generate a valid key pair for testing
+	privateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	privateKeyBytes, _ := x509.MarshalECPrivateKey(privateKey)
+	privateKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: privateKeyBytes})
+	privateKeyStr := string(privateKeyPEM)
+
+	publicKeyBytes, _ := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
+	publicKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: publicKeyBytes})
+	publicKeyStr := string(publicKeyPEM)
+
+	tests := []struct {
+		name        string
+		privateKey  string
+		fromAddress string
+		toAddress   string
+		amount      float64
+		wantErr     bool
+	}{
+		{
+			name:        "Valid transaction",
+			privateKey:  privateKeyStr,
+			fromAddress: publicKeyStr,
+			toAddress:   "recipient_address",
+			amount:      100.0,
+			wantErr:     false,
+		},
+		{
+			name:        "Invalid private key",
+			privateKey:  "invalid_private_key",
+			fromAddress: publicKeyStr,
+			toAddress:   "recipient_address",
+			amount:      100.0,
+			wantErr:     true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := NewTransaction(tt.privateKey, tt.fromAddress, tt.toAddress, tt.amount)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("NewTransaction() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr {
+				// Check if the transaction fields are set correctly
+				if got.Signature == "" {
+					t.Errorf("NewTransaction() Signature is empty")
+				}
+
+				// Verify the signature
+				isValid, verifyErr := got.verifySignature()
+				if verifyErr != nil {
+					t.Errorf("NewTransaction() signature verification error = %v", verifyErr)
+				}
+				if !isValid {
+					t.Errorf("NewTransaction() signature is invalid")
+				}
+			}
+		})
+	}
+}
