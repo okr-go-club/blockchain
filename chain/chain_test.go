@@ -326,3 +326,113 @@ func TestTransaction_Sign(t *testing.T) {
 		})
 	}
 }
+
+func TestTransaction_IsValid(t *testing.T) {
+	// Generate a valid private key for testing
+	privateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	privateKeyBytes, _ := x509.MarshalECPrivateKey(privateKey)
+	privateKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: privateKeyBytes})
+	privateKeyStr := string(privateKeyPEM)
+
+	// Generate a valid public key for testing
+	publicKeyBytes, _ := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
+	publicKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: publicKeyBytes})
+	publicKeyStr := string(publicKeyPEM)
+
+	tests := []struct {
+		name        string
+		transaction Transaction
+		wantValid   bool
+	}{
+		{
+			name: "Valid transaction",
+			transaction: func() Transaction {
+				tr := Transaction{
+					FromAddress:   publicKeyStr,
+					ToAddress:     "recipient_address",
+					Amount:        100.0,
+					Timestamp:     1643723400,
+					TransactionId: "valid_transaction_id",
+				}
+				tr.Sign(privateKeyStr)
+				return tr
+			}(),
+			wantValid: true,
+		},
+		{
+			name: "Invalid signature",
+			transaction: func() Transaction {
+				tr := Transaction{
+					FromAddress:   publicKeyStr,
+					ToAddress:     "recipient_address",
+					Amount:        100.0,
+					Timestamp:     1643723400,
+					TransactionId: "invalid_signature_id",
+					Signature:     "invalid_signature",
+				}
+				return tr
+			}(),
+			wantValid: false,
+		},
+		{
+			name: "Missing FromAddress",
+			transaction: Transaction{
+				ToAddress:     "recipient_address",
+				Amount:        100.0,
+				Timestamp:     1643723400,
+				TransactionId: "missing_from_address_id",
+				Signature:     "some_signature",
+			},
+			wantValid: true,
+		},
+		{
+			name: "Missing ToAddress",
+			transaction: Transaction{
+				FromAddress:   publicKeyStr,
+				Amount:        100.0,
+				Timestamp:     1643723400,
+				TransactionId: "missing_to_address_id",
+				Signature:     "some_signature",
+			},
+			wantValid: false,
+		},
+		{
+			name: "Negative Amount",
+			transaction: func() Transaction {
+				tr := Transaction{
+					FromAddress:   publicKeyStr,
+					ToAddress:     "recipient_address",
+					Amount:        -100.0,
+					Timestamp:     1643723400,
+					TransactionId: "negative_amount_id",
+				}
+				tr.Sign(privateKeyStr)
+				return tr
+			}(),
+			wantValid: true,
+		},
+		{
+			name: "Zero Amount",
+			transaction: func() Transaction {
+				tr := Transaction{
+					FromAddress:   publicKeyStr,
+					ToAddress:     "recipient_address",
+					Amount:        0.0,
+					Timestamp:     1643723400,
+					TransactionId: "zero_amount_id",
+				}
+				tr.Sign(privateKeyStr)
+				return tr
+			}(),
+			wantValid: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.transaction.IsValid(); got != tt.wantValid {
+				t.Errorf("Transaction.IsValid() = %v, want %v", got, tt.wantValid)
+			}
+		})
+	}
+}
