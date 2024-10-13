@@ -786,3 +786,78 @@ func TestBlockchain_AddTransactionToPool(t *testing.T) {
 		})
 	}
 }
+
+func TestBlockchain_GetBalance(t *testing.T) {
+	// Create a mock Storage implementation for testing
+	mockStorage := &MockStorage{}
+
+	// Initialize a blockchain
+	chain := &Blockchain{
+		Blocks:  []Block{},
+		Storage: mockStorage,
+	}
+
+	// Create some test addresses
+	address1 := "address1"
+	address2 := "address2"
+	address3 := "address3"
+
+	// Add some blocks with transactions to the blockchain
+	chain.Blocks = []Block{
+		{
+			Transactions: []Transaction{
+				{FromAddress: "", ToAddress: address1, Amount: 100},
+				{FromAddress: address1, ToAddress: address2, Amount: 30},
+			},
+		},
+		{
+			Transactions: []Transaction{
+				{FromAddress: "", ToAddress: address2, Amount: 100},
+				{FromAddress: address2, ToAddress: address3, Amount: 50},
+				{FromAddress: address1, ToAddress: address3, Amount: 20},
+			},
+		},
+		{
+			Transactions: []Transaction{
+				{FromAddress: "", ToAddress: address3, Amount: 100},
+				{FromAddress: address3, ToAddress: address1, Amount: 10},
+			},
+		},
+	}
+
+	tests := []struct {
+		name    string
+		address string
+		want    float64
+	}{
+		{
+			name:    "Balance of address1",
+			address: address1,
+			want:    60, // 100 - 30 - 20 + 10
+		},
+		{
+			name:    "Balance of address2",
+			address: address2,
+			want:    80, // 100 + 30 - 50
+		},
+		{
+			name:    "Balance of address3",
+			address: address3,
+			want:    160, //100 + 50 + 20 - 10
+		},
+		{
+			name:    "Balance of non-existent address",
+			address: "non_existent_address",
+			want:    0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := chain.GetBalance(tt.address)
+			if got != tt.want {
+				t.Errorf("Blockchain.GetBalance() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
