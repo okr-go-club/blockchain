@@ -374,7 +374,10 @@ func TestTransaction_IsValid(t *testing.T) {
 					Timestamp:     1643723400,
 					TransactionId: "valid_transaction_id",
 				}
-				tr.Sign(privateKeyStr)
+				err := tr.Sign(privateKeyStr)
+				if err != nil {
+					t.Fatalf("Failed to sign transaction: %v", err)
+				}
 				return tr
 			}(),
 			wantValid: true,
@@ -426,7 +429,10 @@ func TestTransaction_IsValid(t *testing.T) {
 					Timestamp:     1643723400,
 					TransactionId: "negative_amount_id",
 				}
-				tr.Sign(privateKeyStr)
+				err := tr.Sign(privateKeyStr)
+				if err != nil {
+					t.Fatalf("Failed to sign transaction: %v", err)
+				}
 				return tr
 			}(),
 			wantValid: true,
@@ -441,7 +447,10 @@ func TestTransaction_IsValid(t *testing.T) {
 					Timestamp:     1643723400,
 					TransactionId: "zero_amount_id",
 				}
-				tr.Sign(privateKeyStr)
+				err := tr.Sign(privateKeyStr)
+				if err != nil {
+					t.Fatalf("Failed to sign transaction: %v", err)
+				}
 				return tr
 			}(),
 			wantValid: true,
@@ -490,7 +499,10 @@ func TestTransaction_verifySignature(t *testing.T) {
 					Timestamp:     1643723400,
 					TransactionId: "valid_signature_id",
 				}
-				tr.Sign(privateKeyStr)
+				err := tr.Sign(privateKeyStr)
+				if err != nil {
+					t.Fatalf("Failed to sign transaction: %v", err)
+				}
 				return tr
 			}(),
 			wantValid: true,
@@ -506,7 +518,10 @@ func TestTransaction_verifySignature(t *testing.T) {
 					Timestamp:     1643723400,
 					TransactionId: "invalid_signature_id",
 				}
-				tr.Sign(anotherPrivateKeyStr)
+				err := tr.Sign(anotherPrivateKeyStr)
+				if err != nil {
+					t.Fatalf("Failed to sign transaction: %v", err)
+				}
 				return tr
 			}(),
 			wantValid: false,
@@ -535,7 +550,10 @@ func TestTransaction_verifySignature(t *testing.T) {
 					Timestamp:     1643723400,
 					TransactionId: "invalid_from_address_id",
 				}
-				tr.Sign(privateKeyStr)
+				err := tr.Sign(privateKeyStr)
+				if err != nil {
+					t.Fatalf("Failed to sign transaction: %v", err)
+				}
 				return tr
 			}(),
 			wantValid: false,
@@ -551,7 +569,10 @@ func TestTransaction_verifySignature(t *testing.T) {
 					Timestamp:     1643723400,
 					TransactionId: "modified_data_id",
 				}
-				tr.Sign(privateKeyStr)
+				err := tr.Sign(privateKeyStr)
+				if err != nil {
+					t.Fatalf("Failed to sign transaction: %v", err)
+				}
 				tr.Amount = 200.0 // Modify the amount after signing
 				return tr
 			}(),

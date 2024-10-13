@@ -306,9 +306,12 @@ func (chain *Blockchain) MinePendingTransactions(minerAddress string) error {
 	}
 	block.Hash = block.CalculateHash()
 
-	block.MineBlock(chain.Difficulty)
+	err := block.MineBlock(chain.Difficulty)
+	if err != nil {
+		return err
+	}
 	chain.AddBlock(block)
-	err := chain.Storage.AddBlock(block)
+	err = chain.Storage.AddBlock(block)
 	if err != nil {
 		return err
 	}
@@ -330,9 +333,12 @@ func InitBlockchain(difficulty, maxBlockSize int, miningReward float64, s Storag
 		genesisBlock := Block{
 			Timestamp: time.Now().Unix(),
 		}
-		genesisBlock.MineBlock(blockchain.Difficulty)
+		err := genesisBlock.MineBlock(blockchain.Difficulty)
+		if err != nil {
+			panic(fmt.Errorf("failed to mine genesis block: %w", err))
+		}
 		blockchain.AddBlock(genesisBlock)
-		err := blockchain.Storage.AddBlock(genesisBlock)
+		err = blockchain.Storage.AddBlock(genesisBlock)
 		if err != nil {
 			panic(err)
 		}
