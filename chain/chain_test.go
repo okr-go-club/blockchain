@@ -739,3 +739,50 @@ func TestBlockchain_AddBlock(t *testing.T) {
 		})
 	}
 }
+
+func TestBlockchain_AddTransactionToPool(t *testing.T) {
+	// Create a mock Storage implementation for testing
+	mockStorage := &MockStorage{}
+
+	// Initialize a blockchain
+	chain := &Blockchain{
+		PendingTransactions: []Transaction{},
+		Storage:             mockStorage,
+	}
+
+	// Generate a valid key pair for testing
+	privateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	privateKeyBytes, _ := x509.MarshalECPrivateKey(privateKey)
+	privateKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: privateKeyBytes})
+	privateKeyStr := string(privateKeyPEM)
+
+	publicKeyBytes, _ := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
+	publicKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: publicKeyBytes})
+	publicKeyStr := string(publicKeyPEM)
+
+	tests := []struct {
+		name        string
+		transaction Transaction
+		wantErr     bool
+	}{
+		{
+			name: "Valid transaction",
+			transaction: func() Transaction {
+				tx, _ := NewTransaction(privateKeyStr, publicKeyStr, "recipient_address", 100.0)
+				return tx
+			}(),
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := chain.AddTransactionToPool(tt.transaction)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Blockchain.AddTransactionToPool() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}
