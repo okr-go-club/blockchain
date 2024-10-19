@@ -149,8 +149,6 @@ func (node *Node) HandleConnection(conn net.Conn, blockchain *chain.Blockchain) 
 	node.Peers[peerAddress] = true
 	node.AddConnection(peerAddress, conn)
 
-	go cronjob(node)
-
 	// Get len of blockchain
 	message, err = reader.ReadString('\n')
 	if err != nil {
@@ -210,7 +208,7 @@ func (node *Node) ConnectToPeer(address string, blockchain *chain.Blockchain) {
 	node.AddConnection(address, conn)
 	fmt.Println("Connected to peer:", address)
 
-	node.SentLenBlockchain(conn, blockchain)
+	go cronjob(node, conn, blockchain)
 
 	go node.ReadData(conn, blockchain)
 }

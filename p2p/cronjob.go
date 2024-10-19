@@ -1,11 +1,13 @@
 package p2p
 
 import (
+	"blockchain/chain"
 	"context"
+	"net"
 	"time"
 )
 
-func task(ctx context.Context, node *Node) {
+func task(ctx context.Context, node *Node, conn net.Conn, blockchain *chain.Blockchain) {
 	// запускаем бесконечный цикл
 	for {
 		select {
@@ -15,18 +17,18 @@ func task(ctx context.Context, node *Node) {
 
 		// выполняем нужный нам код
 		default:
-			println("Hello gophers!")
+			node.SentLenBlockchain(conn, blockchain)
 		}
 		// делаем паузу перед следующей итерацией
 		time.Sleep(time.Minute)
 	}
 }
 
-func cronjob(node *Node) {
+func cronjob(node *Node, conn net.Conn, blockchain *chain.Blockchain) {
 	// create a scheduler
 	// создаём контекст с функцией завершения
 	ctx, cancel := context.WithCancel(context.Background())
-	go task(ctx, node)
+	go task(ctx, node, conn, blockchain)
 	// делаем паузу, чтобы дать горутине поработать
 	time.Sleep(10 * time.Minute)
 	// завершаем контекст, чтобы завершить горутину
