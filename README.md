@@ -5,6 +5,15 @@
 
 An educational project for learning `Golang` and `blockchain` technology. This project uses `Golang`, `net/http` for networking, and `Badger` as persistent storage.
 
+### Contents:
+
+- [Prerequisites](#Prerequisites)
+- [Installation](#Installation)
+- [Running app](#Run)
+- [Generate Private Key for Testing](#Generate-Private-Key-for-Testing)
+- [UI](#UI)
+- [Contributing](#Contributing)
+
 ### Prerequisites
 Before running the project, make sure you have the following installed:
 - [Golang](https://golang.org/doc/install) (version 1.22.2 or higher)
