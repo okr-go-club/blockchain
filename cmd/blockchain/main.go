@@ -18,6 +18,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
+
+	_ "blockchain/docs"
 )
 
 func PrettyPrintBlockchain(blockchain *chain.Blockchain) {
@@ -28,6 +31,20 @@ func PrettyPrintBlockchain(blockchain *chain.Blockchain) {
 	fmt.Println(string(blockchainJSON))
 }
 
+// @title Swagger Example API
+// @version 1.0
+// @description This is a sample server Petstore server.
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host petstore.swagger.io
+// @BasePath /
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
@@ -63,7 +80,7 @@ func main() {
 
 	mux.HandleFunc("POST /blockchain/mine", handler.MineBlock)
 
-	mux.HandleFunc("GET /blockchain/mine/{id}/status", handler.GetMiningStatus)
+	mux.HandleFunc("GET /blockchain/mine/{id}", handler.GetMiningStatus)
 
 	mux.HandleFunc("POST /transactions", handler.PostTransaction)
 
@@ -72,6 +89,15 @@ func main() {
 	mux.HandleFunc("GET /transactions/pool/", handler.GetTransactionPool)
 
 	mux.HandleFunc("GET /blocks/pool/", handler.GetBlocksPool)
+
+	mux.Handle("GET /swagger/", httpSwagger.Handler(
+		httpSwagger.URL("/swagger/doc.json"),
+		httpSwagger.UIConfig(map[string]string{
+			"showExtensions":        "true",
+			"onComplete":            `() => { window.ui.setBasePath('v3'); }`,
+			"defaultModelRendering": `"model"`,
+		}),
+	))
 
 	server := http.Server{
 		Addr:    *httpAddress,

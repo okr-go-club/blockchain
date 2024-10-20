@@ -1,0 +1,117 @@
+definitions:
+  api.AddTransactionRequest:
+    properties:
+      amount:
+        example: "0"
+        type: string
+      from:
+        type: string
+      privateKey:
+        type: string
+      to:
+        type: string
+    type: object
+  api.MineStatusResponse:
+    properties:
+      details:
+        type: string
+      status:
+        type: string
+    type: object
+  chain.Block:
+    properties:
+      capacity:
+        type: integer
+      hash:
+        type: string
+      nonce:
+        type: integer
+      previousHash:
+        type: string
+      timestamp:
+        type: integer
+      transactions:
+        items:
+          $ref: '#/definitions/chain.Transaction'
+        type: array
+    type: object
+  chain.Blockchain:
+    properties:
+      blocks:
+        items:
+          $ref: '#/definitions/chain.Block'
+        type: array
+      difficulty:
+        type: integer
+      maxBlockSize:
+        type: integer
+      miningReward:
+        type: number
+      pendingTransactions:
+        items:
+          $ref: '#/definitions/chain.Transaction'
+        type: array
+      storage: {}
+    type: object
+  chain.Transaction:
+    properties:
+      amount:
+        type: number
+      fromAddress:
+        type: string
+      signature:
+        type: string
+      timestamp:
+        type: integer
+      toAddress:
+        type: string
+      transactionId:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /blockchain/mine/{id}:
+    get:
+      parameters:
+      - description: Mining process ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.MineStatusResponse'
+            type: array
+  /blocks/pool:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/chain.Blockchain'
+  /blocks/pool/:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/chain.Transaction'
+            type: array
+  /transactions:
+    post:
+      parameters:
+      - description: query params
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.AddTransactionRequest'
+      responses:
+        "200":
+          description: OK
+swagger: "2.0"
