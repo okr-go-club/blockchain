@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -157,11 +158,14 @@ func (node *Node) HandleConnection(conn net.Conn, blockchain *chain.Blockchain) 
 			return
 		}
 		fmt.Println("Received Message:", message)
-
-		err = ProcessMessage(message, blockchain)
-		if err != nil {
-			fmt.Println("Error processing message:", err)
-			return
+		if strings.HasPrefix(message, "Length of Blockchain") {
+			node.ReadLenBlockchain(peerAddress, message)
+		} else {
+			err = ProcessMessage(message, blockchain)
+			if err != nil {
+				fmt.Println("Error processing message:", err)
+				return
+			}
 		}
 	}
 }
@@ -193,6 +197,8 @@ func (node *Node) ConnectToPeer(address string, blockchain *chain.Blockchain) {
 	node.AddConnection(address, conn)
 	fmt.Println("Connected to peer:", address)
 
+	go cronjob(node, conn, blockchain)
+
 	go node.ReadData(conn, blockchain)
 }
 
@@ -216,6 +222,19 @@ func (node *Node) RemoveConnection(peerAddress string) {
 	} else {
 		fmt.Println("No connection found for:", peerAddress)
 	}
+}
+
+func (node *Node) SentLenBlockchain(conn net.Conn, blockchain *chain.Blockchain) {
+	num := len(blockchain.Blocks)
+	message := strconv.Itoa(num)
+	_, err := conn.Write([]byte("Length of Blockchain:" + message + "\n"))
+
+	if err != nil {
+		fmt.Println("Error writing to connection:", err)
+		node.RemoveConnection(conn.RemoteAddr().String())
+		return
+	}
+	fmt.Println("Sent Length of my Blockchain:", len(blockchain.Blocks))
 }
 
 func (node *Node) ReadData(conn net.Conn, blockchain *chain.Blockchain) {
@@ -270,4 +289,14 @@ func (node *Node) BroadcastBlock(block chain.Block) {
 		return
 	}
 	node.BroadcastMessage(string(blockJson))
+}
+
+func (node *Node) ReadLenBlockchain(address string, message string) {
+	// Get len of blockchain
+	otherLenBlockchain, _ := strconv.Atoi(strings.TrimSpace(message))
+	fmt.Printf(
+		"Received len of blockhain: %d, peer address: %s\n",
+		otherLenBlockchain,
+		address,
+	)
 }
