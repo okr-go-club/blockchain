@@ -18,7 +18,7 @@ async function fetchMiningStatus(
   processId: string
 ): Promise<MiningStatusResponse> {
   return await axiosInstance
-    .get(`/blockchain/mine/${processId}/status`)
+    .get(`/blockchain/mine/${processId}`)
     .then((res) => res.data);
 }
 

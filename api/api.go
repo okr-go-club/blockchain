@@ -97,6 +97,9 @@ func (h *Handler) MineBlock(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// @Param id path string true "Mining process ID"
+// @Success 200 {array} api.MineStatusResponse
+// @Router /blockchain/mine/{id} [get]
 func (h *Handler) GetMiningStatus(w http.ResponseWriter, r *http.Request) {
 	rawId := r.PathValue("id")
 	id, err := uuid.Parse(rawId)
@@ -122,6 +125,8 @@ func (h *Handler) GetMiningStatus(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// @Success 200 {array} chain.Transaction
+// @Router /blocks/pool/ [get]
 func (h *Handler) GetTransactionPool(w http.ResponseWriter, r *http.Request) {
 	h.BlockchainRWLock.RLock()
 	transactions := h.Blockchain.PendingTransactions
@@ -138,6 +143,9 @@ func (h *Handler) GetTransactionPool(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// @Param request body api.AddTransactionRequest true "query params"
+// @Success 200
+// @Router /transactions [post]
 func (h *Handler) PostTransaction(w http.ResponseWriter, r *http.Request) {
 	var request AddTransactionRequest
 	err := json.NewDecoder(r.Body).Decode(&request)
@@ -166,6 +174,8 @@ func (h *Handler) PostTransaction(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// @Success 200 {object} chain.Blockchain
+// @Router /blocks/pool [get]
 func (h *Handler) GetBlocksPool(w http.ResponseWriter, r *http.Request) {
 	h.BlockchainRWLock.RLock()
 	blocks := h.Blockchain
