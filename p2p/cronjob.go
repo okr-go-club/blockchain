@@ -8,14 +8,12 @@ import (
 )
 
 func task(ctx context.Context, node *Node, conn net.Conn, blockchain *chain.Blockchain) {
-	// запускаем бесконечный цикл
 	for {
 		select {
 		// проверяем не завершён ли ещё контекст и выходим, если завершён
 		case <-ctx.Done():
 			return
 
-		// выполняем нужный нам код
 		default:
 			node.SentLenBlockchain(conn, blockchain)
 		}

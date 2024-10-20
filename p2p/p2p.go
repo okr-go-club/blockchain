@@ -149,20 +149,6 @@ func (node *Node) HandleConnection(conn net.Conn, blockchain *chain.Blockchain) 
 	node.Peers[peerAddress] = true
 	node.AddConnection(peerAddress, conn)
 
-	// Get len of blockchain
-	message, err = reader.ReadString('\n')
-	if err != nil {
-		fmt.Println("Error reading from connection:", err)
-		node.RemoveConnection(conn.RemoteAddr().String())
-		return
-	}
-	otherLenBlockchain, _ := strconv.Atoi(strings.TrimSpace(message))
-	fmt.Printf(
-		"Received len of blockhain: %d, peer address: %s\n",
-		otherLenBlockchain,
-		peerAddress,
-	)
-
 	// Keep the connection open to read messages
 	for {
 		message, err := reader.ReadString('\n')
@@ -172,11 +158,14 @@ func (node *Node) HandleConnection(conn net.Conn, blockchain *chain.Blockchain) 
 			return
 		}
 		fmt.Println("Received Message:", message)
-
-		err = ProcessMessage(message, blockchain)
-		if err != nil {
-			fmt.Println("Error processing message:", err)
-			return
+		if strings.HasPrefix(message, "Length of Blockchain") {
+			node.ReadLenBlockchain(peerAddress, message)
+		} else {
+			err = ProcessMessage(message, blockchain)
+			if err != nil {
+				fmt.Println("Error processing message:", err)
+				return
+			}
 		}
 	}
 }
@@ -238,7 +227,7 @@ func (node *Node) RemoveConnection(peerAddress string) {
 func (node *Node) SentLenBlockchain(conn net.Conn, blockchain *chain.Blockchain) {
 	num := len(blockchain.Blocks)
 	message := strconv.Itoa(num)
-	_, err := conn.Write([]byte(message + "\n"))
+	_, err := conn.Write([]byte("Length of Blockchain:" + message + "\n"))
 
 	if err != nil {
 		fmt.Println("Error writing to connection:", err)
@@ -300,4 +289,14 @@ func (node *Node) BroadcastBlock(block chain.Block) {
 		return
 	}
 	node.BroadcastMessage(string(blockJson))
+}
+
+func (node *Node) ReadLenBlockchain(address string, message string) {
+	// Get len of blockchain
+	otherLenBlockchain, _ := strconv.Atoi(strings.TrimSpace(message))
+	fmt.Printf(
+		"Received len of blockhain: %d, peer address: %s\n",
+		otherLenBlockchain,
+		address,
+	)
 }
