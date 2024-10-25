@@ -225,6 +225,12 @@ func (node *Node) RemoveConnection(peerAddress string) {
 }
 
 func (node *Node) SentLenBlockchain(conn net.Conn, blockchain *chain.Blockchain) {
+	// Отправлять только длину валидного блокчейна
+	if !blockchain.IsValid() {
+		fmt.Println("Can't send Length, Blockchain is invalid")
+		return
+	}
+
 	num := len(blockchain.Blocks)
 	message := strconv.Itoa(num)
 	_, err := conn.Write([]byte("Length of Blockchain:" + message + "\n"))
@@ -293,6 +299,7 @@ func (node *Node) BroadcastBlock(block chain.Block) {
 
 func (node *Node) ReadLenBlockchain(address string, message string) {
 	// Get len of blockchain
+	message = strings.Split(message, ":")[1]
 	otherLenBlockchain, _ := strconv.Atoi(strings.TrimSpace(message))
 	fmt.Printf(
 		"Received len of blockhain: %d, peer address: %s\n",
