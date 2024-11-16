@@ -52,6 +52,7 @@ func (node *Node) StartServer(blockchain *chain.Blockchain) {
 			continue
 		}
 		go node.HandleConnection(conn, blockchain)
+		go cronjob(node, conn, blockchain)
 	}
 }
 
@@ -197,8 +198,6 @@ func (node *Node) ConnectToPeer(address string, blockchain *chain.Blockchain) {
 	node.AddConnection(address, conn)
 	fmt.Println("Connected to peer:", address)
 
-	go cronjob(node, conn, blockchain)
-
 	go node.ReadData(conn, blockchain)
 }
 
@@ -253,10 +252,15 @@ func (node *Node) ReadData(conn net.Conn, blockchain *chain.Blockchain) {
 			return
 		}
 		fmt.Println("Received in ReadData:", message)
-		err = ProcessMessage(message, blockchain)
-		if err != nil {
-			fmt.Println("Error processing message:", err)
-			return
+
+		if strings.HasPrefix(message, "Give me length of your blockchain") {
+			node.SentLenBlockchain(conn, blockchain)
+		} else {
+			err = ProcessMessage(message, blockchain)
+			if err != nil {
+				fmt.Println("Error processing message:", err)
+				return
+			}
 		}
 	}
 }

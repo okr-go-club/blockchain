@@ -3,6 +3,7 @@ package p2p
 import (
 	"blockchain/chain"
 	"context"
+	"fmt"
 	"net"
 	"time"
 )
@@ -15,7 +16,13 @@ func task(ctx context.Context, node *Node, conn net.Conn, blockchain *chain.Bloc
 			return
 
 		default:
-			node.SentLenBlockchain(conn, blockchain)
+			// запросить длину блокчейна
+			_, err := conn.Write([]byte("Give me length of your blockchain!\n"))
+			if err != nil {
+				fmt.Println("Error writing to connection:", err)
+				node.RemoveConnection(conn.RemoteAddr().String())
+				return
+			}
 		}
 		// делаем паузу перед следующей итерацией
 		time.Sleep(time.Minute)
