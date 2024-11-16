@@ -1,4 +1,5 @@
-![Build and test](https://github.com/okr-go-club/blockchain/actions/workflows/go.yml/badge.svg)
+![Build](https://github.com/okr-go-club/blockchain/actions/workflows/go.yml/badge.svg)
+![Tests](https://github.com/okr-go-club/blockchain/actions/workflows/go-test/badge.svg)
 ![golangci-lint](https://github.com/okr-go-club/blockchain/actions/workflows/golangci-lint.yml/badge.svg)
 
 # Blockchain
