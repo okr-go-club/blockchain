@@ -11,6 +11,11 @@ definitions:
       to:
         type: string
     type: object
+  api.MineResponse:
+    properties:
+      id:
+        type: string
+    type: object
   api.MineStatusResponse:
     properties:
       details:
@@ -71,6 +76,13 @@ definitions:
 info:
   contact: {}
 paths:
+  /blockchain/mine:
+    post:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.MineResponse'
   /blockchain/mine/{id}:
     get:
       parameters:

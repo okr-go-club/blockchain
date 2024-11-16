@@ -52,6 +52,8 @@ const (
 	StatusFailed     = "failed"
 )
 
+// @Success 200 {object} api.MineResponse
+// @Router /blockchain/mine [post]
 func (h *Handler) MineBlock(w http.ResponseWriter, r *http.Request) {
 	id := uuid.New()
 	lock := h.MiningLock.TryLock()
