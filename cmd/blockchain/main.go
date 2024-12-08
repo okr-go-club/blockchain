@@ -112,8 +112,10 @@ func main() {
 					Transactions: nil,
 					Timestamp:    time.Now().Unix(),
 					Capacity:     5,
-					PreviousHash: "previousHash",
+					Nonce:        59349,
+					PreviousHash: blockchain.Blocks[len(blockchain.Blocks)-1].Hash,
 				}
+				block.Hash = block.CalculateHash()
 				node.BroadcastBlock(block)
 			default:
 				fmt.Println("Unknown message type")

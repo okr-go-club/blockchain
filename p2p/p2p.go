@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -51,6 +52,7 @@ func (node *Node) StartServer(blockchain *chain.Blockchain) {
 			continue
 		}
 		go node.HandleConnection(conn, blockchain)
+		go cronjob(node, conn, blockchain)
 	}
 }
 
@@ -157,11 +159,14 @@ func (node *Node) HandleConnection(conn net.Conn, blockchain *chain.Blockchain) 
 			return
 		}
 		fmt.Println("Received Message:", message)
-
-		err = ProcessMessage(message, blockchain)
-		if err != nil {
-			fmt.Println("Error processing message:", err)
-			return
+		if strings.HasPrefix(message, "Length of Blockchain") {
+			node.ReadLenBlockchain(peerAddress, message)
+		} else {
+			err = ProcessMessage(message, blockchain)
+			if err != nil {
+				fmt.Println("Error processing message:", err)
+				return
+			}
 		}
 	}
 }
@@ -218,6 +223,25 @@ func (node *Node) RemoveConnection(peerAddress string) {
 	}
 }
 
+func (node *Node) SentLenBlockchain(conn net.Conn, blockchain *chain.Blockchain) {
+	// Отправлять только длину валидного блокчейна
+	if !blockchain.IsValid() {
+		fmt.Println("Can't send Length, Blockchain is invalid")
+		return
+	}
+
+	num := len(blockchain.Blocks)
+	message := strconv.Itoa(num)
+	_, err := conn.Write([]byte("Length of Blockchain:" + message + "\n"))
+
+	if err != nil {
+		fmt.Println("Error writing to connection:", err)
+		node.RemoveConnection(conn.RemoteAddr().String())
+		return
+	}
+	fmt.Println("Sent Length of my Blockchain:", len(blockchain.Blocks))
+}
+
 func (node *Node) ReadData(conn net.Conn, blockchain *chain.Blockchain) {
 	reader := bufio.NewReader(conn)
 	for {
@@ -228,10 +252,15 @@ func (node *Node) ReadData(conn net.Conn, blockchain *chain.Blockchain) {
 			return
 		}
 		fmt.Println("Received in ReadData:", message)
-		err = ProcessMessage(message, blockchain)
-		if err != nil {
-			fmt.Println("Error processing message:", err)
-			return
+
+		if strings.HasPrefix(message, "Give me length of your blockchain") {
+			node.SentLenBlockchain(conn, blockchain)
+		} else {
+			err = ProcessMessage(message, blockchain)
+			if err != nil {
+				fmt.Println("Error processing message:", err)
+				return
+			}
 		}
 	}
 }
@@ -270,4 +299,15 @@ func (node *Node) BroadcastBlock(block chain.Block) {
 		return
 	}
 	node.BroadcastMessage(string(blockJson))
+}
+
+func (node *Node) ReadLenBlockchain(address string, message string) {
+	// Get len of blockchain
+	message = strings.Split(message, ":")[1]
+	otherLenBlockchain, _ := strconv.Atoi(strings.TrimSpace(message))
+	fmt.Printf(
+		"Received len of blockhain: %d, peer address: %s\n",
+		otherLenBlockchain,
+		address,
+	)
 }

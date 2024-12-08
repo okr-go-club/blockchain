@@ -226,6 +226,7 @@ func (chain *Blockchain) AddBlock(block Block) {
 	if len(chain.Blocks) != 0 {
 		block.PreviousHash = chain.Blocks[len(chain.Blocks)-1].Hash
 	}
+	block.Hash = block.CalculateHash()
 	chain.Blocks = append(chain.Blocks, block)
 }
 
